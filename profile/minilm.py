@@ -111,10 +111,14 @@ if __name__ == "__main__":
         try:
             for model_path, model in models.items():
                 logger.info(f"Profiling '{model_path}' ({args.repeat} iters)...")
-                for _ in range(args.repeat):
-                    model.generate(args.input)
-                    infer_times[model_path]["n_iters"] += 1
-                    infer_times[model_path]["total_infer_time"] += model.last_infer_time or 0
+                try:
+                    for _ in range(args.repeat):
+                        model.generate(args.input)
+                        infer_times[model_path]["n_iters"] += 1
+                        infer_times[model_path]["total_infer_time"] += model.last_infer_time or 0
+                except Exception as e:
+                    logger.warning(f"Stopping inference due to error: {e}")
+                    break
         except KeyboardInterrupt:
             break
         
