@@ -66,7 +66,7 @@ class MiniLMSynap(BaseEmbeddingsModel):
 
         token_dims = sorted([inp.shape[1] for inp in self.model.inputs])
         if len(set(token_dims)) > 1:
-            print("Warning: multiple dimensions found for token len, selecting the largest")
+            logger.warning("Multiple dimensions found for token len, selecting the largest")
         self.token_len = token_dims[-1]
 
     @staticmethod
