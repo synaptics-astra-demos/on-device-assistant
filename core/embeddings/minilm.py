@@ -20,14 +20,12 @@ class MiniLMLlama(BaseEmbeddingsModel):
         model_name: str,
         model_path: str | os.PathLike,
         normalize: bool = False,
-        n_threads: int | None = None,
-        export_dir: str | os.PathLike | None = None
+        n_threads: int | None = None
     ):
         super().__init__(
             model_name,
             model_path,
-            normalize,
-            export_dir
+            normalize
         )
         self.model = Llama(
             model_path=str(self.model_path),
@@ -55,14 +53,12 @@ class MiniLMSynap(BaseEmbeddingsModel):
         model_name: str,
         model_path: str,
         hf_model: str,
-        normalize: bool = False,
-        export_dir: str | os.PathLike | None = None
+        normalize: bool = False
     ):
         super().__init__(
             model_name,
             model_path,
-            normalize,
-            export_dir
+            normalize
         )
         self.model = Network(str(self.model_path))
         self.tokenizer = AutoTokenizer.from_pretrained(hf_model)

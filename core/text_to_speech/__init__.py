@@ -1,8 +1,19 @@
 import os
 import argparse
 import hashlib
+import logging
+import signal
+import subprocess
+import sys
 
 from ..utils.download import download_from_hf
+
+logger = logging.getLogger(__name__)
+
+
+def handle_sigint(signum, frame):
+    logger.info("Ctrl+C detected, exiting...")
+    sys.exit(130)
 
 
 class TextToSpeechAgent:
@@ -32,14 +43,29 @@ class TextToSpeechAgent:
 
     def synthesize(self, text: str, output_filename: str = None) -> str:
         if output_filename is None:
-            chk = self.file_checksum(text + self.onnx_file)
+            chk = self.file_checksum(self.onnx_file + text)
             output_filename = os.path.join(self.output_dir, f"speech-output-{chk}.wav")
 
         if os.path.exists(output_filename):
+            logger.debug(f"Found TTS cache at '{output_filename}'")
             return output_filename
 
-        cmd = f'echo "{text}" | piper --model {self.onnx_file} --output_file {output_filename}'
-        os.system(cmd)
+        old_hdlr = signal.getsignal(signal.SIGINT)
+        signal.signal(signal.SIGINT, handle_sigint)
+        echo_proc = subprocess.Popen(
+            ['echo', text],
+            stdout=subprocess.PIPE
+        )
+        piper_proc = subprocess.Popen(
+            ['piper', '--model', self.onnx_file, '--output_file', output_filename],
+            stdin=echo_proc.stdout
+        )
+        echo_proc.stdout.close()  # Allow echo_proc to receive SIGPIPE if piper exits
+        piper_proc.wait()
+        echo_proc.wait()
+
+        logger.debug(f"Caching TTS to '{output_filename}'")
+        signal.signal(signal.SIGINT, old_hdlr)
         return output_filename
 
 

@@ -11,14 +11,11 @@ class BaseEmbeddingsModel(ABC):
         self,
         model_name: str,
         model_path: str | os.PathLike,
-        normalize: bool,
-        export_dir: str | os.PathLike | None
+        normalize: bool
     ):
         self.model_name = model_name
         self.model_path = Path(model_path)
         self.normalize = normalize
-        self.export_dir = Path(export_dir or f"export/{self.model_path.stem}")
-        self.export_dir.mkdir(exist_ok=True, parents=True)
 
         self._infer_times = deque(maxlen=100)
 

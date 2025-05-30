@@ -1,6 +1,9 @@
 import subprocess
+import logging
 import os
 import numpy as np
+
+logger = logging.getLogger(__name__)
 
 
 class AudioManager:
@@ -53,9 +56,9 @@ class AudioManager:
         If no playback device is available, warn and skip audio playback.
         """
         if not self._play_device:
-            print("Warning: No playback device available. Skipping audio playback.")
+            logger.warning("No playback device available. Skipping audio playback.")
             return
-        print(f"Playing through: {self._play_device}")
+        logger.debug(f"Playing through: {self._play_device}")
         subprocess.run(["aplay", "-q", "-D", self._play_device, filename], check=True)
 
     def start_record(self, chunk_size=512):
@@ -65,8 +68,6 @@ class AudioManager:
         command = (
             f"arecord -D {self._record_device} -f S16_LE -r {self._sample_rate} -c 2"
         )
-        # print(f"Recording from: {self._record_device}")
-        # print(f"Command: {command}")
         self.arecord_process = subprocess.Popen(
             command,
             stdout=subprocess.PIPE,
@@ -133,8 +134,8 @@ class AudioManager:
         play_info = get_card_info(playback_card) if playback_card else "No playback device"
 
         # Output
-        print(f"Recording device : hw:{record_hw or 'None'} - {rec_info}")
-        print(f"Playback device  : hw:{playback_hw or 'None'} - {play_info}")
+        logger.info(f"Recording device : hw:{record_hw or 'None'} - {rec_info}")
+        logger.info(f"Playback device  : hw:{playback_hw or 'None'} - {play_info}")
 
 
     def _get_asoundrc_device(self):
@@ -158,7 +159,7 @@ class AudioManager:
                         result["capture_devices"].append((card, dev, name))
 
         except Exception as e:
-            print(f"Error reading /proc/asound/pcm: {e}")
+            logger.error(f"Error reading /proc/asound/pcm: {e}")
 
         # Only create .asoundrc if SDK version is 1.6.0
         if self._astra_version == "1.6.0":
@@ -179,9 +180,9 @@ pcm.plugplay {{
                         asoundrc_path = os.path.expanduser("~/.asoundrc")
                         with open(asoundrc_path, "w") as f:
                             f.write(asoundrc_content.strip() + "\n")
-                            print(f"Astra SDK {self._astra_version} found, .asoundrc created with hw:{card},{dev}")
+                            logger.debug(f"Astra SDK {self._astra_version} found, .asoundrc created with hw:{card},{dev}")
                     except Exception as e:
-                        print(f"Error writing .asoundrc: {e}")
+                        logger.error(f"Error writing .asoundrc: {e}")
                     break
 
         return result
@@ -206,15 +207,15 @@ pcm.plugplay {{
 
         # Fallback: use shared device
         if self._astra_version == "1.6.0" and asoundrc_device:
-            print(f"No separate mic found. Using shared plugplay (hw:{asoundrc_device})")
+            logger.info(f"No separate mic found. Using shared plugplay (hw:{asoundrc_device})")
             return "plugplay"
 
         if capture:
             card, dev, name = capture[0]
-            print(f"No separate mic found. Using shared device for recording: {name} (plughw:{card},{dev})")
+            logger.info(f"No separate mic found. Using shared device for recording: {name} (plughw:{card},{dev})")
             return f"plughw:{card},{dev}"
 
-        print("No USB mic available")
+        logger.warning("No USB mic available")
         return None
 
 
@@ -225,8 +226,8 @@ pcm.plugplay {{
         playback = self._audio_config["playback_devices"]
         if playback:
             card, dev, name = playback[0]
-            print(f"Selected speaker: {name} (plughw:{card},{dev})")
+            logger.debug(f"Selected speaker: {name} (plughw:{card},{dev})")
             return f"plughw:{card},{dev}"
 
-        print("No USB speaker/playback device available")
+        logger.warning("No USB speaker/playback device available")
         return None
