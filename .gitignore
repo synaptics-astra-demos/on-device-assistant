@@ -1,0 +1,14 @@
+*.synap
+*.onnx
+*.tflite
+models/
+.venv/
+venv/
+models/
+stats/
+export/
+__pycache__/
+*.py[cod]
+*.npy
+.cache
+output
