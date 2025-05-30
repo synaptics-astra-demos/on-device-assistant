@@ -2,7 +2,11 @@
 
 Run `./install.sh` to setup environment and download models.
 
-Launch assistant with `python assistant.py`
+Launch assistant with:
+```sh
+source .venv/bin/activate
+python assistant.py
+```
 
 #### Run Options
 * `--qa-file`: Path to Question-Answer pairs (default: [data/qa_dishwasher.json](data/qa_dishwasher.json))
