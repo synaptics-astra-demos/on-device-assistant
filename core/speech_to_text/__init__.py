@@ -24,7 +24,15 @@ def moonshine_factory(model_size: str, sampling_rate: int, cpu_only: bool = Fals
 
 
 class SpeechToTextAgent:
-    def __init__(self, model_size: str, handler: Callable[[str], Any], cpu_only: bool = False, n_threads: int | None = None):
+    def __init__(
+        self, 
+        model_size: str, 
+        handler: Callable[[str], Any], 
+        cpu_only: bool = False, 
+        n_threads: int | None = None, 
+        threshold: float = 0.3,
+        min_silence_duration_ms: int = 300,
+    ):
         self.handler = handler
 
         self.speech_to_text = moonshine_factory(model_size, SAMPLING_RATE, cpu_only, n_threads)
@@ -32,8 +40,8 @@ class SpeechToTextAgent:
         self.vad_iterator = VADIterator(
             model=self.vad_model,
             sampling_rate=SAMPLING_RATE,
-            threshold=0.3,
-            min_silence_duration_ms=300,
+            threshold=threshold,
+            min_silence_duration_ms=min_silence_duration_ms,
         )
 
         self.audio_manager = AudioManager()
@@ -114,8 +122,7 @@ if __name__ == "__main__":
 
     pipe = SpeechToTextAgent(
         model="base",  # Set to "tiny" for faster but less accurate model
-        handler=handle_results,
-        echo=False,  # Set echo True to play audio after recording ends for debug purposes
+        handler=handle_results
     )
 
     pipe.run()

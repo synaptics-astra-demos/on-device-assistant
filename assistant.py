@@ -9,7 +9,9 @@ from core.embeddings import TextEmbeddingsAgent
 from core.speech_to_text import SpeechToTextAgent
 from core.text_to_speech import TextToSpeechAgent
 
-QA_FILE: Final = "data/qa_dishwasher.json"
+DEFAULT_QA_FILE: Final = "data/qa_assistant.json"
+DEFAULT_SPEECH_THRESH: Final = 0.5
+DEFAULT_SILENCE_DUR_MS: Final = 300 
 
 
 def configure_logging(verbosity: str):
@@ -64,7 +66,13 @@ def main():
         tools = json.load(f)
 
     text_agent = TextEmbeddingsAgent(args.qa_file, cpu_only=args.cpu_only, cpu_cores=args.threads)
-    stt_agent = SpeechToTextAgent("base", handle_speech_input, cpu_only=args.cpu_only, n_threads=args.threads)
+    stt_agent = SpeechToTextAgent(
+        "base", handle_speech_input, 
+        cpu_only=args.cpu_only, 
+        n_threads=args.threads,
+        threshold=args.threshold,
+        min_silence_duration_ms=args.silence_ms
+    )
     tts_agent = TextToSpeechAgent()
     stt_agent.run()
 
@@ -74,7 +82,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--qa-file",
         type=str,
-        default=QA_FILE,
+        default=DEFAULT_QA_FILE,
         help="Path to Question-Answer pairs (default: %(default)s)"
     )
     parser.add_argument(
@@ -94,6 +102,19 @@ if __name__ == "__main__":
         "-j", "--threads",
         type=int,
         help="Number of cores to use for CPU execution (default: all)"
+    )
+    stt_args = parser.add_argument_group("speech-to-text options")
+    stt_args.add_argument(
+        "--threshold",
+        type=float,
+        default=DEFAULT_SPEECH_THRESH,
+        help="Speech threshold, increase to lower mic capture sensitivity (default: %(default)s)"
+    )
+    stt_args.add_argument(
+        "--silence-ms",
+        type=int,
+        default=DEFAULT_SILENCE_DUR_MS,
+        help="Length of silence that determines end of speech (default: %(default)s ms)"
     )
     args = parser.parse_args()
 
