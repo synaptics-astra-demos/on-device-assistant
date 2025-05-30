@@ -9,6 +9,8 @@ python assistant.py
 ```
 
 #### Run Options
-* `--qa-file`: Path to Question-Answer pairs (default: [data/qa_dishwasher.json](data/qa_dishwasher.json))
+* `--qa-file`: Path to Question-Answer pairs (default: [data/qa_assistant.json](data/qa_assistant.json))
 * `--cpu-only`: Use CPU only models
 * `-j`: Number of cores to use for CPU execution (default: all)
+
+Run `python assistant.py --help` to view all available options
