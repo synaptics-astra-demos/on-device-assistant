@@ -18,7 +18,7 @@ CURRENT_DIR=$(pwd)
 # Check if .venv directory exists
 if [ ! -d ".venv" ]; then
     print_message $GREEN "Virtual environment not found. Creating one..."
-    python3 -m venv .venv || { print_message $RED "Failed to create virtual environment. Exiting."; exit 1; }
+    python3 -m venv .venv --system-site-packages || { print_message $RED "Failed to create virtual environment. Exiting."; exit 1; }
 fi
 
 # Activate the virtual environment
@@ -33,8 +33,8 @@ else
 fi
 
 # Download models and pre-generate TTS
-python initialize.py || { print_message $YELLOW "Failed download models."; exit 1; }
+python initialize.py || { print_message $YELLOW "Failed to download models.";}
 
 # Print completion message
 print_message $GREEN "Setup complete. Run the following commands to start demo:\n"
-print_message $GREEN "source .venv/bin/activate\npython assistant.py"
+print_message $BLUE "source .venv/bin/activate\npython assistant.py"

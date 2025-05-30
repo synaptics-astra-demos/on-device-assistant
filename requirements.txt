@@ -12,3 +12,4 @@ synap-python @ https://github.com/synaptics-synap/synap-python/releases/download
 onnxruntime>=1.20.0,<1.21.0
 transformers
 scikit-learn
+opencv-python-headless

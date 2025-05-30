@@ -5,14 +5,14 @@
     },
     {
         "token": "{vision}",
-        "command": "python3 -m assistant.tools.vision"
+        "command": "python -m core.tools.vision"
     },
     {
         "token": "{light_on}",
-        "command": "echo 'light on' & python assistant/tools/gpio.py 484 out 1"
+        "command": "echo 'light on' & python core/tools/gpio.py 484 out 1"
     },
     {
         "token": "{light_off}",
-        "command": "echo 'light off' & python assistant/tools/gpio.py 484 out 0"
+        "command": "echo 'light off' & python core/tools/gpio.py 484 out 0"
     }
 ]
