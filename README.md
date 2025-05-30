@@ -19,7 +19,10 @@ Run `python assistant.py --help` to view all available options
 
 ## Profiling
 Profiling scripts are available at [profile/](profile/). Currently supported models:
-* MiniLM [profile/minilm.py](profile/minilm.py)
+
+| Model | Script | Supported Model Types |
+| ----- | ------ | ----------------- |
+| MiniLM | [profile/minilm.py](profile/minilm.py) | `.synap` (SyNAP), `.gguf` (llama.cpp) |
 
 Run profiling with:
 ```sh
@@ -31,3 +34,6 @@ python -m profile.<model>
 * `--models`: Model files to profile, inference runner is selected based on model type
 * `--run-forever`: Continuosly profile provided models in a loop until interrupted with `ctrl + c`
 * `-j`: Number of cores to use for CPU execution (default: all)
+
+> [!TIP]
+> Use in conjunction with the [Astra resource usage visualizer](https://github.com/spal-synaptics/astra-visualizer) to get a live dashboard of CPU and NPU usage during inference
