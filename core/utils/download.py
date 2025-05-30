@@ -1,18 +1,30 @@
 import os
 import requests
 import logging
+from pathlib import Path
+
 from huggingface_hub import hf_hub_download
+from tqdm import tqdm
 
 logger = logging.getLogger(__name__)
 
 
-def download_from_url(url: str, filename: str | os.PathLike):
-    with requests.get(url, stream=True) as r:
-        r.raise_for_status()
-        with open(filename, 'wb') as f:
-            for chunk in r.iter_content(chunk_size=8192):
-                if chunk:
-                    f.write(chunk)
+def download_from_url(url: str, filename: str | os.PathLike, chunk_size: int = 8192):
+    filename = Path(filename)
+    filename.parent.mkdir(exist_ok=True, parents=True)
+
+    response = requests.get(url, stream=True)
+    response.raise_for_status()
+
+    total = int(response.headers.get('content-length', 0))
+    progress = tqdm(total=total, unit='B', unit_scale=True, desc=str(filename))
+
+    with open(filename, 'wb') as f:
+        for chunk in response.iter_content(chunk_size=chunk_size):
+            if chunk:
+                f.write(chunk)
+                progress.update(len(chunk))
+    progress.close()
 
 
 def download_from_hf(repo_id: str, filename: str | os.PathLike):

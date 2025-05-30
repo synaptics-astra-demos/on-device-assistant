@@ -102,7 +102,7 @@ class SpeechToTextAgent:
                         start_time = time.time()
 
         except KeyboardInterrupt:
-            logger.info("Speech-to-text stopped by user.")
+            logger.info("Stopped by user.")
             self.audio_manager.stop_record()
 
 

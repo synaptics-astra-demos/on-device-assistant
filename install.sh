@@ -32,9 +32,9 @@ else
     exit 1
 fi
 
-# Prompt the user
-print_message $GREEN "\nInstallation complete."
+# Download models and pre-generate TTS
+python initialize.py || { print_message $YELLOW "Failed download models."; exit 1; }
 
 # Print completion message
-print_message $GREEN "Setup complete. Run the following commands to run demo:\n"
+print_message $GREEN "Setup complete. Run the following commands to start demo:\n"
 print_message $GREEN "source .venv/bin/activate\npython assistant.py"
