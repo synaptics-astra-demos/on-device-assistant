@@ -24,10 +24,6 @@ if __name__ == "__main__":
     print(f"Transcribing with ONNX backend...")
     transcribe(data, stt_onnx)
 
-    stt_synap = MoonshineSynap(
-        "models/synap/moonshine/tiny/encoder.synap",
-        "models/synap/moonshine/tiny/decoder_uncached.synap",
-        "models/synap/moonshine/tiny/decoder_cached.synap"
-    )
+    stt_synap = MoonshineSynap()
     print(f"Transcribing with SyNAP backend...")
     transcribe(data, stt_synap)

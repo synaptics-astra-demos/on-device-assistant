@@ -11,6 +11,10 @@ logger = logging.getLogger(__name__)
 
 def download_from_url(url: str, filename: str | os.PathLike, chunk_size: int = 8192):
     filename = Path(filename)
+    if filename.exists():
+        logger.info(f"File found locally at: {filename}")
+        return filename
+
     filename.parent.mkdir(exist_ok=True, parents=True)
 
     response = requests.get(url, stream=True)
@@ -25,6 +29,8 @@ def download_from_url(url: str, filename: str | os.PathLike, chunk_size: int = 8
                 f.write(chunk)
                 progress.update(len(chunk))
     progress.close()
+
+    return filename
 
 
 def download_from_hf(repo_id: str, filename: str | os.PathLike):

@@ -9,15 +9,12 @@ import soundfile as sf
 from synap import Network
 
 from .base import BaseSpeechToTextModel
-from ..utils.download import download_from_hf
+from ..utils.download import download_from_hf, download_from_url
 
 
 class MoonshineSynap(BaseSpeechToTextModel):
     def __init__(
         self,
-        encoder_model: str | os.PathLike, 
-        decoder_uncached_model: str | os.PathLike, 
-        decoder_cached_model: str | os.PathLike,
         *,
         hf_repo: str = "UsefulSensors/moonshine",
         model_size: Literal["base", "tiny"] = "tiny",
@@ -35,8 +32,18 @@ class MoonshineSynap(BaseSpeechToTextModel):
         )
         # self.encoder = Network(str(encoder_model))
         self.encoder = onnxruntime.InferenceSession(encoder_path, providers=['CPUExecutionProvider'])
-        self.decoder_uncached = Network(str(decoder_uncached_model))
-        self.decoder_cached = Network(str(decoder_cached_model))
+        self.decoder_uncached = Network(str(
+            download_from_url(
+                url="https://github.com/spal-synaptics/on-device-assistant/releases/download/models-v1/decoder_uncached.synap",
+                filename="models/synap/moonshine/tiny/decoder_uncached.synap"
+            )
+        ))
+        self.decoder_cached = Network(str(
+            download_from_url(
+                url="https://github.com/spal-synaptics/on-device-assistant/releases/download/models-v1/decoder_cached.synap",
+                filename="models/synap/moonshine/tiny/decoder_cached.synap"
+            )
+        ))
         self.encoder_pad_id: int = 0
         self.max_tok_per_s = max_tok_per_s
         self.cached_decoder_shapes: dict[str, list[int]] = {o.name: list(o.shape) for o in self.decoder_cached.inputs}
