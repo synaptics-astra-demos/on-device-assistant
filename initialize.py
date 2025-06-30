@@ -44,6 +44,18 @@ if __name__ == "__main__":
         repo_id="UsefulSensors/moonshine-base", 
         filename="tokenizer.json"
     )
+    download_from_url(
+        url="https://github.com/spal-synaptics/on-device-assistant/releases/download/models-v1/encoder.synap",
+        filename=MODELS_DIR / f"synap/moonshine/tiny/encoder.synap"
+    )
+    download_from_url(
+        url="https://github.com/spal-synaptics/on-device-assistant/releases/download/models-v1/decoder_uncached.synap",
+        filename=MODELS_DIR / f"synap/moonshine/tiny/decoder_uncached.synap"
+    )
+    download_from_url(
+        url="https://github.com/spal-synaptics/on-device-assistant/releases/download/models-v1/decoder_cached.synap",
+        filename=MODELS_DIR / f"synap/moonshine/tiny/decoder_cached.synap"
+    )
     # download piper-tts models
     download_from_hf(
         repo_id="rhasspy/piper-voices",
