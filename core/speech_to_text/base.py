@@ -1,4 +1,5 @@
 import json
+import time
 from abc import ABC, abstractmethod
 from collections import deque
 
@@ -61,6 +62,11 @@ class BaseSpeechToTextModel(ABC):
     def _generate(self, audio: np.ndarray, max_len: int | None = None) -> np.ndarray:
         ...
 
-    @abstractmethod
     def transcribe(self, speech: np.ndarray) -> str:
-        ...
+        st = time.time()
+        speech = speech.astype(np.float32)[np.newaxis, :]
+        tokens = self._generate(speech)
+        text = self.tokenizer.decode_batch(tokens, skip_special_tokens=True)[0]
+        et = time.time()
+        self._transcribe_times.append(et - st)
+        return text
