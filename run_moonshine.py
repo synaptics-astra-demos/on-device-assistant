@@ -20,7 +20,7 @@ if __name__ == "__main__":
     data = data[:80000]
     print(f"Input: {data.shape[-1]} samples, {sr} Hz")
     
-    stt_onnx = MoonshineOnnx()
+    stt_onnx = MoonshineOnnx(model_size="tiny")
     print(f"Transcribing with ONNX backend...")
     transcribe(data, stt_onnx)
 

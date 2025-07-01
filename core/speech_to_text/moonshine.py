@@ -1,4 +1,4 @@
-import os
+import logging
 import sys
 import time
 from typing import Literal
@@ -10,6 +10,8 @@ from synap import Network
 
 from .base import BaseSpeechToTextModel
 from ..utils.download import download_from_hf, download_from_url
+
+logger = logging.getLogger(__name__)
 
 
 class MoonshineSynap(BaseSpeechToTextModel):
@@ -69,12 +71,11 @@ class MoonshineSynap(BaseSpeechToTextModel):
     
     def _size_input(self, input: np.ndarray) -> np.ndarray:
         input = input.flatten()
-        # input = input * 32768
         if len(input) > self.max_inp_len:
-            # print(f"Truncating input from {len(input)} to {self.max_inp_len}")
+            logger.warning(f"MoonshineSynap: Truncating input from {len(input)} to {self.max_inp_len}")
             input = input[:self.max_inp_len]
         elif len(input) < self.max_inp_len:
-            # print(f"Padding input from {len(input)} to {self.max_inp_len}")
+            logger.debug(f"MoonshineSynap: Padding input from {len(input)} to {self.max_inp_len}")
             input = np.pad(input, (0, self.max_inp_len - len(input)), constant_values=self.encoder_pad_id)
         return input.reshape((1, self.max_inp_len)).astype(np.float16)
 

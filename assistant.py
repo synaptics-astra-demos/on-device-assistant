@@ -67,7 +67,7 @@ def main():
 
     text_agent = TextEmbeddingsAgent(args.qa_file, cpu_only=args.cpu_only, cpu_cores=args.threads)
     stt_agent = SpeechToTextAgent(
-        "base", handle_speech_input, 
+        "tiny", handle_speech_input, 
         cpu_only=args.cpu_only, 
         n_threads=args.threads,
         threshold=args.threshold,

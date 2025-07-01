@@ -6,7 +6,7 @@ import numpy as np
 
 from silero_vad import VADIterator, load_silero_vad
 
-from .moonshine import MoonshineOnnx
+from .moonshine import MoonshineOnnx, MoonshineSynap
 from ..utils.audio import AudioManager
 
 SAMPLING_RATE = 16000
@@ -20,7 +20,9 @@ logger = logging.getLogger(__name__)
 
 
 def moonshine_factory(model_size: str, sampling_rate: int, cpu_only: bool = False, n_threads: int | None = None) -> MoonshineOnnx:
-    return MoonshineOnnx(model_size=model_size, rate=sampling_rate, n_threads=n_threads)
+    if cpu_only:
+        return MoonshineOnnx(model_size=model_size, rate=sampling_rate, n_threads=n_threads)
+    return MoonshineSynap(model_size=model_size, rate=sampling_rate)
 
 
 class SpeechToTextAgent:
