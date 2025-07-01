@@ -26,12 +26,18 @@ class MoonshineSynap(BaseSpeechToTextModel):
             f"{hf_repo}-{model_size}",
             rate
         )
-        encoder_path = download_from_hf(
-            repo_id=hf_repo,
-            filename=f"onnx/merged/{model_size}/quantized/encoder_model.onnx",
-        )
-        # self.encoder = Network(str(encoder_model))
-        self.encoder = onnxruntime.InferenceSession(encoder_path, providers=['CPUExecutionProvider'])
+        self.encoder_onnx = onnxruntime.InferenceSession(
+            download_from_hf(
+                repo_id=hf_repo,
+                filename=f"onnx/merged/{model_size}/quantized/encoder_model.onnx",
+            ), 
+            providers=['CPUExecutionProvider'])
+        self.encoder = Network(str(
+            download_from_url(
+                url="https://github.com/spal-synaptics/on-device-assistant/releases/download/models-v1/encoder.synap",
+                filename="models/synap/moonshine/tiny/encoder.synap"
+            )
+        ))
         self.decoder_uncached = Network(str(
             download_from_url(
                 url="https://github.com/spal-synaptics/on-device-assistant/releases/download/models-v1/decoder_uncached.synap",
@@ -47,8 +53,7 @@ class MoonshineSynap(BaseSpeechToTextModel):
         self.encoder_pad_id: int = 0
         self.max_tok_per_s = max_tok_per_s
         self.cached_decoder_shapes: dict[str, list[int]] = {o.name: list(o.shape) for o in self.decoder_cached.inputs}
-        # self.max_inp_len: int = next(inp.shape for inp in self.encoder.get_inputs() if inp.name == "input_values")[-1]
-        self.max_inp_len: int = 80000
+        self.max_inp_len: int = next(inp.shape for inp in self.encoder.inputs if inp.name == "input_values")[-1]
         self.max_tokens: int = next(inp.shape for inp in self.decoder_cached.inputs if "decoder" in inp.name)[2] # assuming shape [B, H, L, D]
         if isinstance(max_tok_per_s, int) and max_tok_per_s > 0:
             user_max_tokens: int = int(self.max_inp_len / 16_000) * max_tok_per_s
@@ -138,7 +143,7 @@ class MoonshineSynap(BaseSpeechToTextModel):
         # np.save("temp_outputs/input.npy", input)
 
         # encoder_out = self.encoder.predict([input])[0].to_numpy().astype(np.float16)
-        encoder_out = self.encoder.run(None, {"input_values": input.astype(np.float32)})[0].astype(np.float16)
+        encoder_out = self.encoder_onnx.run(None, {"input_values": input.astype(np.float32)})[0].astype(np.float16)
         # np.save("temp_outputs/encoder_out.npy", encoder_out)
         # encoder_out = np.load("temp_inputs/encoder_out.npy").astype(np.float16)
 
