@@ -23,6 +23,7 @@ Profiling scripts are available at [profile/](profile/). Currently supported mod
 | Model | Script | Supported Model Types |
 | ----- | ------ | ----------------- |
 | MiniLM | [profile/minilm.py](profile/minilm.py) | `.synap` (SyNAP), `.gguf` (llama.cpp) |
+| Moonshine | [profile/moonshine.py](profile/moonshine.py) | `.synap` (SyNAP), `.onnx` (ORT) |
 
 Run profiling with:
 ```sh
@@ -31,7 +32,7 @@ python -m profile.<model>
 ```
 
 #### Run Options
-* `--models`: Model files to profile, inference runner is selected based on model type
+* `--model[s]`: Model(s) to profile, inference runner is selected based on model type
 * `--run-forever`: Continuosly profile provided models in a loop until interrupted with `ctrl + c`
 * `-j`: Number of cores to use for CPU execution (default: all)
 
