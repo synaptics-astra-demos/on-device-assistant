@@ -20,36 +20,38 @@ class MoonshineSynap(BaseSpeechToTextModel):
         *,
         hf_repo: str = "UsefulSensors/moonshine",
         model_size: Literal["base", "tiny"] = "tiny",
+        quant_type: Literal["float", "quantized"] = "float",
         rate: int = 16_000,
         max_tok_per_s: int | None = None
     ):
         super().__init__(
             hf_repo,
             f"{hf_repo}-{model_size}",
+            quant_type,
             rate
         )
         self.encoder_onnx = onnxruntime.InferenceSession(
             download_from_hf(
                 repo_id=hf_repo,
-                filename=f"onnx/merged/{model_size}/quantized/encoder_model.onnx",
+                filename=f"onnx/merged/{model_size}/{self.quant_type}/encoder_model.onnx",
             ), 
             providers=['CPUExecutionProvider'])
         self.encoder = Network(str(
             download_from_url(
-                url="https://github.com/spal-synaptics/on-device-assistant/releases/download/models-v1/encoder.synap",
-                filename="models/synap/moonshine/tiny/encoder.synap"
+                url=f"https://github.com/spal-synaptics/on-device-assistant/releases/download/models-v1/encoder_{model_size}_{self.quant_type}.synap",
+                filename=f"models/synap/moonshine/{model_size}/{self.quant_type}/encoder.synap"
             )
         ))
         self.decoder_uncached = Network(str(
             download_from_url(
-                url="https://github.com/spal-synaptics/on-device-assistant/releases/download/models-v1/decoder_uncached.synap",
-                filename="models/synap/moonshine/tiny/decoder_uncached.synap"
+                url=f"https://github.com/spal-synaptics/on-device-assistant/releases/download/models-v1/decoder_uncached_{model_size}_{self.quant_type}.synap",
+                filename=f"models/synap/moonshine/{model_size}/{self.quant_type}/decoder_uncached.synap"
             )
         ))
         self.decoder_cached = Network(str(
             download_from_url(
-                url="https://github.com/spal-synaptics/on-device-assistant/releases/download/models-v1/decoder_cached.synap",
-                filename="models/synap/moonshine/tiny/decoder_cached.synap"
+                url=f"https://github.com/spal-synaptics/on-device-assistant/releases/download/models-v1/decoder_cached_{model_size}_{self.quant_type}.synap",
+                filename=f"models/synap/moonshine/{model_size}/{self.quant_type}/decoder_cached.synap"
             )
         ))
         self.encoder_pad_id: int = 0
@@ -169,21 +171,23 @@ class MoonshineOnnx(BaseSpeechToTextModel):
         *,
         hf_repo: str = "UsefulSensors/moonshine",
         model_size: Literal["base", "tiny"] = "base",
+        quant_type: Literal["float", "quantized"] = "quantized",
         rate: int = 16_000,
         n_threads: int | None = None
     ):
         super().__init__(
             hf_repo,
             f"{hf_repo}-{model_size}",
+            quant_type,
             rate
         )
         encoder_path = download_from_hf(
             repo_id=hf_repo,
-            filename=f"onnx/merged/{model_size}/quantized/encoder_model.onnx",
+            filename=f"onnx/merged/{model_size}/{self.quant_type}/encoder_model.onnx",
         )
         decoder_path = download_from_hf(
             repo_id=hf_repo,
-            filename=f"onnx/merged/{model_size}/quantized/decoder_model_merged.onnx",
+            filename=f"onnx/merged/{model_size}/{self.quant_type}/decoder_model_merged.onnx",
         )
         opts = onnxruntime.SessionOptions()
         if n_threads is not None:

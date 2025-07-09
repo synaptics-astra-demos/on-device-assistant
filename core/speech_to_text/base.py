@@ -2,6 +2,7 @@ import json
 import time
 from abc import ABC, abstractmethod
 from collections import deque
+from typing import Literal
 
 import numpy as np
 from tokenizers import Tokenizer
@@ -14,10 +15,12 @@ class BaseSpeechToTextModel(ABC):
         self,
         hf_repo: str,
         config_hf_repo: str,
+        quant_type: Literal["float", "quantized"],
         rate: int = 16_000
     ):
         self.hf_repo = hf_repo
         self.config_hf_repo = config_hf_repo
+        self.quant_type = quant_type
         self.rate = rate
 
         self.config = self._load_config()

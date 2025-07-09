@@ -1,12 +1,16 @@
 import argparse
 import logging
+from itertools import product
 from typing import Final
 
 import soundfile as sf
 
-from core.speech_to_text import MoonshineOnnx, MoonshineSynap
+from core.speech_to_text import MoonshineOnnx, MoonshineSynap, STT_MODEL_SIZES, STT_QUANT_TYPES
 
-DEFAULT_SIZE: Final = "tiny"
+MODEL_TYPES: Final = [
+    "onnx",
+    "synap"
+]
 SAMPLE_INPUT: Final = "data/audio/beckett.wav"
 
 
@@ -28,11 +32,13 @@ def configure_logging(verbosity: str):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "-m", "--model",
+        "-m", "--models",
         type=str,
-        choices=["tiny", "base"],
-        default=DEFAULT_SIZE,
-        help="Moonshine model size (default: %(default)s)"
+        metavar="MODEL",
+        nargs="+",
+        choices=[f"{t}-{s}-{q}" for (t, s, q) in product(MODEL_TYPES, STT_MODEL_SIZES, STT_QUANT_TYPES)],
+        default=["onnx-tiny-float", "synap-tiny-float"],
+        help="Moonshine models to profile (default: %(default)s), available:\n%(choices)s"
     )
     parser.add_argument(
         "-r", "--repeat",
@@ -70,26 +76,29 @@ if __name__ == "__main__":
     logger = logging.getLogger(__name__)
     logger.info("Starting profiling...")
 
-    if args.model != "tiny":
-        raise ValueError("Only Moonshine tiny is currently available for profiling")
-
-    moonshine_onnx = MoonshineOnnx(
-        model_size=args.model, n_threads=args.threads
-    )
-    moonshine_synap = MoonshineSynap(
-        model_size=args.model
-    )
-    
-    audio, sr = sf.read(args.input, dtype="float32")
-    audio = audio[:moonshine_synap.max_inp_len]
-    
-    models: dict[str, MoonshineOnnx | MoonshineSynap] = {
-        "ONNX": moonshine_onnx,
-        "SyNAP": moonshine_synap
-    }
+    max_inp_len: int | None = None
+    models: dict[str, MoonshineOnnx | MoonshineSynap] = {}
+    for model_name in args.models:
+        model_type, model_size, model_quant = model_name.split("-")
+        if model_type == "onnx":
+            models[model_name] = MoonshineOnnx(
+                model_size=model_size, quant_type=model_quant, n_threads=args.threads
+            )
+        elif model_type == "synap":
+            if model_size != "tiny":
+                raise ValueError("Only Moonshine tiny is currently available for profiling")
+            models[model_name] = MoonshineSynap(
+                model_size=model_size, quant_type=model_quant
+            )
+            if not isinstance(max_inp_len, int) or models[model_name].max_inp_len < max_inp_len:
+                max_inp_len = models[model_name].max_inp_len
     infer_times: dict[str, dict] = {
         model_name: {"n_iters": 0, "total_infer_time": 0} for model_name in models
     }
+
+    audio, sr = sf.read(args.input, dtype="float32")
+    if isinstance(max_inp_len, int):
+        audio = audio[:max_inp_len]
 
     while True:
         try:

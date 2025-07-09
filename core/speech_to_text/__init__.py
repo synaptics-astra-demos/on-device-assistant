@@ -1,6 +1,6 @@
 import logging
 import time
-from typing import Any, Callable
+from typing import Any, Callable, Final
 
 import numpy as np
 
@@ -9,26 +9,33 @@ from silero_vad import VADIterator, load_silero_vad
 from .moonshine import MoonshineOnnx, MoonshineSynap
 from ..utils.audio import AudioManager
 
-SAMPLING_RATE = 16000
-CHUNK_SIZE = 512
-LOOKBACK_CHUNKS = 7
-MAX_LINE_LENGTH = 80
-MAX_SPEECH_SECS = 15
-MIN_REFRESH_SECS = 0.5
+SAMPLING_RATE: Final = 16000
+CHUNK_SIZE: Final = 512
+LOOKBACK_CHUNKS: Final = 7
+MAX_LINE_LENGTH: Final = 80
+MAX_SPEECH_SECS: Final = 15
+MIN_REFRESH_SECS: Final = 0.5
+STT_MODEL_SIZES: Final = ["tiny", "base"]
+STT_QUANT_TYPES: Final = ["float", "quantized"]
 
 logger = logging.getLogger(__name__)
 
 
-def moonshine_factory(model_size: str, sampling_rate: int, cpu_only: bool = False, n_threads: int | None = None) -> MoonshineOnnx:
+def moonshine_factory(model_size: str, quant_type: str, sampling_rate: int, cpu_only: bool = False, n_threads: int | None = None) -> MoonshineOnnx:
+    if model_size not in STT_MODEL_SIZES:
+        raise ValueError(f"Invalid model size: {model_size}. Supported sizes are 'tiny' and 'base'.")
+    if quant_type not in STT_QUANT_TYPES:
+        raise ValueError(f"Invalid quantization type: {quant_type}. Supported types are 'float' and 'quantized'.")
     if cpu_only:
-        return MoonshineOnnx(model_size=model_size, rate=sampling_rate, n_threads=n_threads)
-    return MoonshineSynap(model_size=model_size, rate=sampling_rate)
+        return MoonshineOnnx(model_size=model_size, quant_type=quant_type, rate=sampling_rate, n_threads=n_threads)
+    return MoonshineSynap(model_size=model_size, quant_type=quant_type, rate=sampling_rate)
 
 
 class SpeechToTextAgent:
     def __init__(
         self, 
-        model_size: str, 
+        model_size: str,
+        quant_type: str,
         handler: Callable[[str], Any], 
         cpu_only: bool = False, 
         n_threads: int | None = None, 
@@ -37,7 +44,7 @@ class SpeechToTextAgent:
     ):
         self.handler = handler
 
-        self.speech_to_text = moonshine_factory(model_size, SAMPLING_RATE, cpu_only, n_threads)
+        self.speech_to_text = moonshine_factory(model_size, quant_type, SAMPLING_RATE, cpu_only, n_threads)
         self.vad_model = load_silero_vad(onnx=True)
         self.vad_iterator = VADIterator(
             model=self.vad_model,

@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import Final
 
 from core.embeddings import TextEmbeddingsAgent
-from core.speech_to_text import SpeechToTextAgent
+from core.speech_to_text import SpeechToTextAgent, STT_MODEL_SIZES, STT_QUANT_TYPES
 from core.text_to_speech import TextToSpeechAgent
 
 DEFAULT_QA_FILE: Final = "data/qa_assistant.json"
@@ -67,7 +67,7 @@ def main():
 
     text_agent = TextEmbeddingsAgent(args.qa_file, cpu_only=args.cpu_only, cpu_cores=args.threads)
     stt_agent = SpeechToTextAgent(
-        "tiny", handle_speech_input, 
+        args.stt_size, args.stt_quant, handle_speech_input, 
         cpu_only=args.cpu_only, 
         n_threads=args.threads,
         threshold=args.threshold,
@@ -115,6 +115,20 @@ if __name__ == "__main__":
         type=int,
         default=DEFAULT_SILENCE_DUR_MS,
         help="Length of silence that determines end of speech (default: %(default)s ms)"
+    )
+    stt_args.add_argument(
+        "--stt-size",
+        type=str,
+        choices=STT_MODEL_SIZES,
+        default="tiny",
+        help="Speech-to-text model size (default: %(default)s)"
+    )
+    stt_args.add_argument(
+        "--stt-quant",
+        type=str,
+        choices=STT_QUANT_TYPES,
+        default="float",
+        help="Speech-to-text model quantization type (default: %(default)s)"
     )
     args = parser.parse_args()
 

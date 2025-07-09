@@ -30,11 +30,11 @@ if __name__ == "__main__":
     # download Moonshine models
     download_from_hf(
         repo_id="UsefulSensors/moonshine",
-        filename=f"onnx/merged/base/quantized/encoder_model.onnx",
+        filename=f"onnx/merged/tiny/float/encoder_model.onnx",
     )
     download_from_hf(
         repo_id="UsefulSensors/moonshine",
-        filename=f"onnx/merged/base/quantized/decoder_model_merged.onnx",
+        filename=f"onnx/merged/tiny/float/decoder_model_merged.onnx",
     )
     download_from_hf(
         repo_id="UsefulSensors/moonshine-base", 
@@ -45,16 +45,16 @@ if __name__ == "__main__":
         filename="tokenizer.json"
     )
     download_from_url(
-        url="https://github.com/spal-synaptics/on-device-assistant/releases/download/models-v1/encoder.synap",
-        filename=MODELS_DIR / f"synap/moonshine/tiny/encoder.synap"
+        url="https://github.com/spal-synaptics/on-device-assistant/releases/download/models-v1/encoder_tiny_float.synap",
+        filename=MODELS_DIR / f"synap/moonshine/tiny/float/encoder.synap"
     )
     download_from_url(
-        url="https://github.com/spal-synaptics/on-device-assistant/releases/download/models-v1/decoder_uncached.synap",
-        filename=MODELS_DIR / f"synap/moonshine/tiny/decoder_uncached.synap"
+        url="https://github.com/spal-synaptics/on-device-assistant/releases/download/models-v1/decoder_uncached_tiny_float.synap",
+        filename=MODELS_DIR / f"synap/moonshine/tiny/float/decoder_uncached.synap"
     )
     download_from_url(
-        url="https://github.com/spal-synaptics/on-device-assistant/releases/download/models-v1/decoder_cached.synap",
-        filename=MODELS_DIR / f"synap/moonshine/tiny/decoder_cached.synap"
+        url="https://github.com/spal-synaptics/on-device-assistant/releases/download/models-v1/decoder_cached_tiny_float.synap",
+        filename=MODELS_DIR / f"synap/moonshine/tiny/float/decoder_cached.synap"
     )
     # download piper-tts models
     download_from_hf(
