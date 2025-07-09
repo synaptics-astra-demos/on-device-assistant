@@ -85,8 +85,6 @@ if __name__ == "__main__":
                 model_size=model_size, quant_type=model_quant, n_threads=args.threads
             )
         elif model_type == "synap":
-            if model_size != "tiny":
-                raise ValueError("Only Moonshine tiny is currently available for profiling")
             models[model_name] = MoonshineSynap(
                 model_size=model_size, quant_type=model_quant
             )
