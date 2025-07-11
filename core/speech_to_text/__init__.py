@@ -5,8 +5,6 @@ from typing import Any, Callable, Final
 import numpy as np
 
 from silero_vad import VADIterator, load_silero_vad
-
-from .moonshine import MoonshineOnnx, MoonshineSynap
 from ..utils.audio import AudioManager
 
 SAMPLING_RATE: Final = 16000
@@ -21,7 +19,9 @@ STT_QUANT_TYPES: Final = ["float", "quantized"]
 logger = logging.getLogger(__name__)
 
 
-def moonshine_factory(model_size: str, quant_type: str, sampling_rate: int, cpu_only: bool = False, n_threads: int | None = None) -> MoonshineOnnx:
+def moonshine_factory(model_size: str, quant_type: str, sampling_rate: int, cpu_only: bool = False, n_threads: int | None = None) -> "MoonshineOnnx | MoonshineSynap":
+    from .moonshine import MoonshineOnnx, MoonshineSynap
+
     if model_size not in STT_MODEL_SIZES:
         raise ValueError(f"Invalid model size: {model_size}. Supported sizes are 'tiny' and 'base'.")
     if quant_type not in STT_QUANT_TYPES:

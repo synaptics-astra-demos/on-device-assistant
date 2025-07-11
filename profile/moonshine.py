@@ -1,11 +1,10 @@
 import argparse
 import logging
-from itertools import product
 from typing import Final
 
 import soundfile as sf
 
-from core.speech_to_text import MoonshineOnnx, MoonshineSynap, STT_MODEL_SIZES, STT_QUANT_TYPES
+from core.speech_to_text.moonshine import MoonshineOnnx, MoonshineSynap, MODEL_CHOICES
 
 MODEL_TYPES: Final = [
     "onnx",
@@ -36,7 +35,7 @@ if __name__ == "__main__":
         type=str,
         metavar="MODEL",
         nargs="+",
-        choices=[f"{t}-{s}-{q}" for (t, s, q) in product(MODEL_TYPES, STT_MODEL_SIZES, STT_QUANT_TYPES)],
+        choices=MODEL_CHOICES,
         default=["onnx-tiny-float", "synap-tiny-float"],
         help="Moonshine models to profile (default: %(default)s), available:\n%(choices)s"
     )
@@ -50,7 +49,7 @@ if __name__ == "__main__":
         "-i", "--input",
         type=str,
         default=SAMPLE_INPUT,
-        help="Input text for inference (default: \"%(default)s)\""
+        help="Input WAV audio for inference (default: \"%(default)s)\""
     )
     parser.add_argument(
         "-j", "--threads",
@@ -90,6 +89,8 @@ if __name__ == "__main__":
             )
             if not isinstance(max_inp_len, int) or models[model_name].max_inp_len < max_inp_len:
                 max_inp_len = models[model_name].max_inp_len
+        else:
+            raise ValueError(f"Unknown model type: {model_type}, supported types are {MODEL_TYPES}")
     infer_times: dict[str, dict] = {
         model_name: {"n_iters": 0, "total_infer_time": 0} for model_name in models
     }

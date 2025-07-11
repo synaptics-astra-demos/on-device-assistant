@@ -1,7 +1,8 @@
+import argparse
 import logging
-import sys
 import time
-from typing import Literal
+from itertools import product
+from typing import Literal, Final
 
 import numpy as np
 import onnxruntime
@@ -11,6 +12,10 @@ from synap import Network
 from .base import BaseSpeechToTextModel
 from ..utils.download import download_from_hf, download_from_url
 
+MODEL_TYPES: Final = ["onnx", "synap"]
+STT_MODEL_SIZES: Final = ["tiny", "base"]
+STT_QUANT_TYPES: Final = ["float", "quantized"]
+MODEL_CHOICES: Final = [f"{t}-{s}-{q}" for (t, s, q) in product(MODEL_TYPES, STT_MODEL_SIZES, STT_QUANT_TYPES)]
 logger = logging.getLogger(__name__)
 
 
@@ -91,7 +96,7 @@ class MoonshineSynap(BaseSpeechToTextModel):
             for b in ("key", "value")
         })
 
-    def _pad_cache_tensor(self, cache_tensor: np.ndarray, req_shape: tuple[int]) -> np.ndarray:
+    def _pad_cache_tensor(self, cache_tensor: np.ndarray, req_shape: list[int]) -> np.ndarray:
         if cache_tensor.shape == req_shape:
             return cache_tensor
         if cache_tensor.ndim != len(req_shape):
@@ -136,8 +141,8 @@ class MoonshineSynap(BaseSpeechToTextModel):
         next_token = logits[0, -1].argmax().item()
         return next_token, cache
 
-    def _generate(self, audio: np.ndarray, max_tokens: int | None = None) -> np.ndarray:
-        max_tokens = max_tokens if isinstance(max_tokens, int) and max_tokens < self.max_tokens else self.max_tokens
+    def _generate(self, audio: np.ndarray, max_len: int | None = None) -> np.ndarray:
+        max_len = max_len if isinstance(max_len, int) and max_len < self.max_tokens else self.max_tokens
         
         self._init_cache()
         next_token = self.decoder_start_token_id
@@ -154,7 +159,7 @@ class MoonshineSynap(BaseSpeechToTextModel):
         self._update_cache(init_cache, update_all=True)
         tokens.append(next_token)
 
-        for i in range(max_tokens):
+        for i in range(max_len):
             next_token, cache = self._run_decoder([next_token], encoder_out, seq_len=i+1)
             self._update_cache(cache)
             tokens.append(next_token)
@@ -237,24 +242,46 @@ class MoonshineOnnx(BaseSpeechToTextModel):
 
 
 def main():
-    if len(sys.argv) < 2:
-        print("Usage: python speech_to_text.py <audio_file>")
-        sys.exit(1)
-    audio_path = sys.argv[1]
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "-m", "--model",
+        type=str,
+        metavar="MODEL",
+        required=True,
+        choices=MODEL_CHOICES,
+        help="Moonshine model to use for transcription (available:\n%(choices)s)"
+    )
+    parser.add_argument(
+        "-i", "--input",
+        type=str,
+        required=True,
+        help="Input WAV audio for inference"
+    )
+    parser.add_argument(
+        "-j", "--threads",
+        type=int,
+        help="Number of cores to use for CPU execution (default: all)"
+    )
+    args = parser.parse_args()
+
+    audio_path = args.input
     data, sr = sf.read(audio_path, dtype="float32")
-    print("Loading Moonshine model using ONNX runtime ...")
-    stt = MoonshineOnnx()
-    audio_ms = len(data) / sr * 1000
-    print("Transcribing ...")
-    start = time.time()
-    text = stt.transcribe(data)
-    end = time.time()
-    transcribe_ms = (end - start) * 1000
-    speed_factor = (audio_ms / 1000) / (end - start)
-    print(f"audio sample time: {int(audio_ms)}ms")
-    print(f"transcribe time:  {int(transcribe_ms)}ms")
-    print(f"speed: {speed_factor:.1f}x")
-    print(f"result: {text}")
+    model_type, model_size, model_quant = args.model.split("-")
+    if model_type == "onnx":
+        print("Loading Moonshine model using ONNX runtime ...")
+        stt = MoonshineOnnx(
+            model_size=model_size, quant_type=model_quant, n_threads=args.threads
+        )
+    elif model_type == "synap":
+        print("Loading Moonshine model using SyNAP runtime ...")
+        stt = MoonshineSynap(
+            model_size=model_size, quant_type=model_quant
+        )
+    else:
+        raise ValueError(f"Unknown model type: {model_type}, supported types are {MODEL_TYPES}")
+
+    result = stt.transcribe(data)
+    print(f"Transcribed ({stt.last_infer_time * 1000:.2f} ms): \"{result}\"\n")
 
 
 if __name__ == "__main__":
