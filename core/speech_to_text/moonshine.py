@@ -38,7 +38,7 @@ class MoonshineSynap(BaseSpeechToTextModel):
         self.encoder_onnx = onnxruntime.InferenceSession(
             download_from_hf(
                 repo_id=hf_repo,
-                filename=f"onnx/merged/{model_size}/{self.quant_type}/encoder_model.onnx",
+                filename=f"onnx/merged/{model_size}/float/encoder_model.onnx",
             ), 
             providers=['CPUExecutionProvider'])
         self.encoder = Network(str(
