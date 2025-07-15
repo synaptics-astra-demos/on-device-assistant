@@ -2,6 +2,7 @@ import argparse
 import logging
 from typing import Final
 
+import numpy as np
 import soundfile as sf
 
 from core.speech_to_text.moonshine import MoonshineOnnx, MoonshineSynap, MODEL_CHOICES
@@ -10,7 +11,6 @@ MODEL_TYPES: Final = [
     "onnx",
     "synap"
 ]
-SAMPLE_INPUT: Final = "data/audio/beckett.wav"
 
 
 def configure_logging(verbosity: str):
@@ -48,8 +48,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "-i", "--input",
         type=str,
-        default=SAMPLE_INPUT,
-        help="Input WAV audio for inference (default: \"%(default)s)\""
+        help="Input WAV audio for inference"
     )
     parser.add_argument(
         "-j", "--threads",
@@ -95,7 +94,10 @@ if __name__ == "__main__":
         model_name: {"n_iters": 0, "total_infer_time": 0} for model_name in models
     }
 
-    audio, sr = sf.read(args.input, dtype="float32")
+    if args.input:
+        audio, sr = sf.read(args.input, dtype="float32")
+    else:
+        audio = np.zeros(5 * 16000, dtype="float32")  # Default to 5 seconds of silence
     if isinstance(max_inp_len, int):
         audio = audio[:max_inp_len]
 
