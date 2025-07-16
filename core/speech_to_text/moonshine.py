@@ -262,6 +262,14 @@ class MoonshineOnnx(BaseSpeechToTextModel):
 
 
 def main():
+    import json
+    from pathlib import Path
+
+    def _dump_results_json(results: dict, path: Path):
+        with open(path, "w") as f:
+            json.dump(results, f, indent=2)
+        print(f"Results saved to {path}")
+
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "-m", "--model",
@@ -274,18 +282,29 @@ def main():
     parser.add_argument(
         "-i", "--input",
         type=str,
+        metavar="WAV",
+        nargs="+",
         required=True,
         help="Input WAV audio for inference"
+    )
+    parser.add_argument(
+        "-o", "--dump-out",
+        type=str,
+        metavar="JSON",
+        help="Dump inference results to JSON file",
     )
     parser.add_argument(
         "-j", "--threads",
         type=int,
         help="Number of cores to use for CPU execution (default: all)"
     )
+    parser.add_argument(
+        "-v", "--verbose",
+        action="store_true",
+        help="Display verbose stats"
+    )
     args = parser.parse_args()
 
-    audio_path = args.input
-    data, sr = sf.read(audio_path, dtype="float32")
     model_type, model_size, model_quant = args.model.split("-")
     if model_type == "onnx":
         print("Loading Moonshine model using ONNX runtime ...")
@@ -300,8 +319,26 @@ def main():
     else:
         raise ValueError(f"Unknown model type: {model_type}, supported types are {MODEL_TYPES}")
 
-    result = stt.transcribe(data)
-    print(f"Transcribed ({stt.last_infer_time * 1000:.2f} ms): \"{result}\"\n")
+    all_results = {"model": args.model, "results": []}
+    for audio_path in args.input:
+        data, _ = sf.read(audio_path, dtype="float32")
+        result = stt.transcribe(data)
+        print(f"\nTranscribed ({stt.last_infer_time * 1000:.2f} ms): \"{result}\"")
+        curr_results = {
+            "input": audio_path,
+            "total_infer_time_ms": stt.last_infer_time * 1000,
+            "transcription": result,
+        }
+        if (expected := Path(f"{audio_path}.txt")).exists():
+            expected_text = expected.read_text().strip()
+            print(f"Expected: \"{expected_text}\"")
+            curr_results["expected_transcription"] = expected_text
+        if args.verbose:
+            print(f"Detailed inference stats:\n{json.dumps(stt.last_infer_stats, indent=2)}")
+            curr_results["detailed_infer_stats"] = stt.last_infer_stats
+        all_results["results"].append(curr_results)
+    if args.dump_out:
+        _dump_results_json(all_results, Path(args.dump_out))
 
 
 if __name__ == "__main__":
