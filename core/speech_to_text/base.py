@@ -35,6 +35,11 @@ class BaseSpeechToTextModel(ABC):
         self.max_len = self.config["max_position_embeddings"]
 
         self._transcribe_times = deque(maxlen=100)
+        self._infer_stats = {}
+
+    @property
+    def last_infer_stats(self) -> dict:
+        return self._infer_stats
     
     @property
     def last_infer_time(self) -> float | None:
@@ -66,6 +71,7 @@ class BaseSpeechToTextModel(ABC):
         ...
 
     def transcribe(self, speech: np.ndarray) -> str:
+        self._infer_stats = {}
         st = time.time()
         speech = speech.astype(np.float32)[np.newaxis, :]
         tokens = self._generate(speech)

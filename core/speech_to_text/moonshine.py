@@ -149,23 +149,33 @@ class MoonshineSynap(BaseSpeechToTextModel):
         tokens = [next_token]
         input = self._size_input(audio).astype(np.float16)
         # np.save("temp_outputs/input.npy", input)
+        self._infer_stats["input_size"] = input.shape[-1]
 
         # encoder_out = self.encoder.predict([input])[0].to_numpy().astype(np.float16)
+        enc_st = time.time()
         encoder_out = self.encoder_onnx.run(None, {"input_values": input.astype(np.float32)})[0].astype(np.float16)
+        enc_et = time.time()
+        self._infer_stats["encoder_infer_time_ms"] = (enc_et - enc_st) * 1000
         # np.save("temp_outputs/encoder_out.npy", encoder_out)
         # encoder_out = np.load("temp_inputs/encoder_out.npy").astype(np.float16)
 
+        dec_st = time.time()
         next_token, init_cache = self._run_decoder(tokens, encoder_out, seq_len=0)
         self._update_cache(init_cache, update_all=True)
         tokens.append(next_token)
+        dec_et = time.time()
+        self._infer_stats["decoder_uncached_infer_time_ms"] = (dec_et - dec_st) * 1000
 
-        for i in range(max_len):
-            next_token, cache = self._run_decoder([next_token], encoder_out, seq_len=i+1)
+        dec_st = time.time()
+        for i in range(1, max_len):
+            next_token, cache = self._run_decoder([next_token], encoder_out, seq_len=i)
             self._update_cache(cache)
             tokens.append(next_token)
             if next_token == self.eos_token_id:
                 break
-        
+        dec_et = time.time()
+        self._infer_stats["decoder_cached_infer_time_ms"] = (dec_et - dec_st) * 1000
+        self._infer_stats["decoder_tokens"] = i
         return np.array([tokens])
 
 
@@ -206,7 +216,12 @@ class MoonshineOnnx(BaseSpeechToTextModel):
     def _generate(self, audio: np.ndarray, max_len: int | None = None) -> np.ndarray:
         if max_len is None:
             max_len = min((audio.shape[-1] // self.rate) * 6, self.max_len)
+        self._infer_stats["input_size"] = audio.shape[-1]
+        enc_st = time.time()
         enc_out = self.encoder_session.run(None, {"input_values": audio})[0]
+        enc_et = time.time()
+        self._infer_stats["encoder_infer_time_ms"] = (enc_et - enc_st) * 1000
+
         batch_size = enc_out.shape[0]
         input_ids = np.array(
             [[self.decoder_start_token_id]] * batch_size, dtype=np.int64
@@ -220,6 +235,8 @@ class MoonshineOnnx(BaseSpeechToTextModel):
             for kv in ("key", "value")
         }
         gen_tokens = input_ids
+
+        dec_st = time.time()
         for i in range(max_len):
             use_cache_branch = i > 0
             dec_inputs = {
@@ -238,6 +255,9 @@ class MoonshineOnnx(BaseSpeechToTextModel):
             gen_tokens = np.concatenate([gen_tokens, next_tokens], axis=-1)
             if (next_tokens == self.eos_token_id).all():
                 break
+        dec_et = time.time()
+        self._infer_stats["decoder_infer_time_ms"] = (dec_et - dec_st) * 1000
+        self._infer_stats["decoder_tokens"] = i
         return gen_tokens
 
 
