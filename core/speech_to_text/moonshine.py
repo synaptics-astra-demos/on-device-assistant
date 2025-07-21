@@ -43,19 +43,19 @@ class MoonshineSynap(BaseSpeechToTextModel):
             providers=['CPUExecutionProvider'])
         self.encoder = Network(str(
             download_from_url(
-                url=f"https://github.com/spal-synaptics/on-device-assistant/releases/download/models-v1/encoder_{model_size}_{self.quant_type}.synap",
+                url=f"https://github.com/spal-synaptics/on-device-assistant/releases/download/models-v1/moonshine_{model_size}_{self.quant_type}_encoder.synap",
                 filename=f"models/synap/moonshine/{model_size}/{self.quant_type}/encoder.synap"
             )
         ))
         self.decoder_uncached = Network(str(
             download_from_url(
-                url=f"https://github.com/spal-synaptics/on-device-assistant/releases/download/models-v1/decoder_uncached_{model_size}_{self.quant_type}.synap",
+                url=f"https://github.com/spal-synaptics/on-device-assistant/releases/download/models-v1/moonshine_{model_size}_{self.quant_type}_decoder_uncached.synap",
                 filename=f"models/synap/moonshine/{model_size}/{self.quant_type}/decoder_uncached.synap"
             )
         ))
         self.decoder_cached = Network(str(
             download_from_url(
-                url=f"https://github.com/spal-synaptics/on-device-assistant/releases/download/models-v1/decoder_cached_{model_size}_{self.quant_type}.synap",
+                url=f"https://github.com/spal-synaptics/on-device-assistant/releases/download/models-v1/moonshine_{model_size}_{self.quant_type}_decoder_cached.synap",
                 filename=f"models/synap/moonshine/{model_size}/{self.quant_type}/decoder_cached.synap"
             )
         ))
@@ -321,9 +321,10 @@ def main():
 
     all_results = {"model": args.model, "results": []}
     for audio_path in args.input:
+        print()
         data, _ = sf.read(audio_path, dtype="float32")
         result = stt.transcribe(data)
-        print(f"\nTranscribed ({stt.last_infer_time * 1000:.2f} ms): \"{result}\"")
+        print(f"Transcribed ({stt.last_infer_time * 1000:.2f} ms): \"{result}\"")
         curr_results = {
             "input": audio_path,
             "total_infer_time_ms": stt.last_infer_time * 1000,
@@ -337,6 +338,7 @@ def main():
             print(f"Detailed inference stats:\n{json.dumps(stt.last_infer_stats, indent=2)}")
             curr_results["detailed_infer_stats"] = stt.last_infer_stats
         all_results["results"].append(curr_results)
+        print()
     if args.dump_out:
         _dump_results_json(all_results, Path(args.dump_out))
 
