@@ -5,12 +5,10 @@ from itertools import product
 from typing import Literal, Final
 
 import numpy as np
-import onnxruntime
 import soundfile as sf
-from synap import Network
 
 from .base import BaseSpeechToTextModel
-from ..utils.download import download_from_hf, download_from_url
+from ..inference.runners import OnnxInferenceRunner, SynapInferenceRunner
 
 MODEL_TYPES: Final = ["onnx", "synap"]
 STT_MODEL_SIZES: Final = ["tiny", "base"]
@@ -35,42 +33,34 @@ class MoonshineSynap(BaseSpeechToTextModel):
             quant_type,
             rate
         )
-        self.encoder_onnx = onnxruntime.InferenceSession(
-            download_from_hf(
-                repo_id=hf_repo,
-                filename=f"onnx/merged/{model_size}/float/encoder_model.onnx",
-            ), 
-            providers=['CPUExecutionProvider'])
-        self.encoder = Network(str(
-            download_from_url(
-                url=f"https://github.com/spal-synaptics/on-device-assistant/releases/download/models-v1/moonshine_{model_size}_{self.quant_type}_encoder.synap",
-                filename=f"models/synap/moonshine/{model_size}/{self.quant_type}/encoder.synap"
-            )
-        ))
-        self.decoder_uncached = Network(str(
-            download_from_url(
-                url=f"https://github.com/spal-synaptics/on-device-assistant/releases/download/models-v1/moonshine_{model_size}_{self.quant_type}_decoder_uncached.synap",
-                filename=f"models/synap/moonshine/{model_size}/{self.quant_type}/decoder_uncached.synap"
-            )
-        ))
-        self.decoder_cached = Network(str(
-            download_from_url(
-                url=f"https://github.com/spal-synaptics/on-device-assistant/releases/download/models-v1/moonshine_{model_size}_{self.quant_type}_decoder_cached.synap",
-                filename=f"models/synap/moonshine/{model_size}/{self.quant_type}/decoder_cached.synap"
-            )
-        ))
+        self.encoder_onnx = OnnxInferenceRunner.from_hf(
+            hf_repo=hf_repo,
+            filename=f"onnx/merged/{model_size}/float/encoder_model.onnx",
+        )
+        self.encoder = SynapInferenceRunner.from_uri(
+            url=f"https://github.com/spal-synaptics/on-device-assistant/releases/download/models-v1/moonshine_{model_size}_{self.quant_type}_encoder.synap",
+            filename=f"models/synap/moonshine/{model_size}/{self.quant_type}/encoder.synap"
+        )
+        self.decoder_uncached = SynapInferenceRunner.from_uri(
+            url=f"https://github.com/spal-synaptics/on-device-assistant/releases/download/models-v1/moonshine_{model_size}_{self.quant_type}_decoder_uncached.synap",
+            filename=f"models/synap/moonshine/{model_size}/{self.quant_type}/decoder_uncached.synap"
+        )
+        self.decoder_cached = SynapInferenceRunner.from_uri(
+            url=f"https://github.com/spal-synaptics/on-device-assistant/releases/download/models-v1/moonshine_{model_size}_{self.quant_type}_decoder_cached.synap",
+            filename=f"models/synap/moonshine/{model_size}/{self.quant_type}/decoder_cached.synap"
+        )
         self.encoder_pad_id: int = 0
         self.max_tok_per_s = max_tok_per_s
-        self.cached_decoder_shapes: dict[str, list[int]] = {o.name: list(o.shape) for o in self.decoder_cached.inputs}
-        self.max_inp_len: int = next(inp.shape for inp in self.encoder.inputs if inp.name == "input_values")[-1]
-        self.max_tokens: int = next(inp.shape for inp in self.decoder_cached.inputs if "decoder" in inp.name)[2] # assuming shape [B, H, L, D]
+        self.cached_decoder_shapes: dict[str, list[int]] = {o.name: list(o.shape) for o in self.decoder_cached.model.inputs}
+        self.max_inp_len: int = next(inp.shape for inp in self.encoder.model.inputs if inp.name == "input_values")[-1]
+        self.max_tokens: int = next(inp.shape for inp in self.decoder_cached.model.inputs if "decoder" in inp.name)[2] # assuming shape [B, H, L, D]
         if isinstance(max_tok_per_s, int) and max_tok_per_s > 0:
             user_max_tokens: int = int(self.max_inp_len / 16_000) * max_tok_per_s
             if user_max_tokens > self.max_tokens:
                 raise ValueError(f"Provided max tokens/sec ({max_tok_per_s}) is too high for model (max: {int(self.max_tokens / self.max_inp_len * 16_000)} tokens/sec)")
             self.max_tokens = user_max_tokens
 
-        self.all_cache_tensors = [inp.name for inp in self.decoder_cached.inputs if "past_key_values" in inp.name]
+        self.all_cache_tensors = [inp.name for inp in self.decoder_cached.model.inputs if "past_key_values" in inp.name]
         self.dec_cache_tensors = [k for k in self.all_cache_tensors if "encoder" not in k]
         self.decoder_cache: dict[str, np.ndarray] = {}
 
@@ -126,18 +116,18 @@ class MoonshineSynap(BaseSpeechToTextModel):
                 "input_ids": np.asarray(input_ids, dtype=np.int32),
                 "encoder_hidden_states": encoder_out
             }
-            logits, *cache = [o.to_numpy() for o in self.decoder_uncached.predict(list(decoder_inputs.values()))]
-            # for i, out in enumerate(self.decoder_uncached.outputs):
-            #     np.save(f"temp_outputs/decoder_uncached-out-{i}.npy", out.to_numpy())
+            logits, *cache = [o.to_numpy() for o in self.decoder_uncached.infer(decoder_inputs)]
+            self._infer_stats["decoder_uncached_infer_time_ms"] = self.decoder_uncached.infer_time_ms
         else:
             decoder_inputs = {
                 "input_ids": np.asarray(input_ids, dtype=np.int32),
                 **self.decoder_cache
             }
             decoder_inputs["current_len"] = np.array([[seq_len]], dtype=np.int32)
-            logits, *cache = [o.to_numpy() for o in self.decoder_cached.predict(list(decoder_inputs.values()))]
-            # for i, out in enumerate(self.decoder_cached.outputs):
-            #     np.save(f"temp_outputs/decoder_cached-out-{i}-seq_{seq_len}.npy", out.to_numpy())
+            logits, *cache = [o.to_numpy() for o in self.decoder_cached.infer(decoder_inputs)]
+            if not self._infer_stats.get("decoder_cached_infer_time_ms"):
+                self._infer_stats["decoder_cached_infer_time_ms"] = 0
+            self._infer_stats["decoder_cached_infer_time_ms"] += self.decoder_cached.infer_time_ms
         next_token = logits[0, -1].argmax().item()
         return next_token, cache
 
@@ -148,33 +138,21 @@ class MoonshineSynap(BaseSpeechToTextModel):
         next_token = self.decoder_start_token_id
         tokens = [next_token]
         input = self._size_input(audio).astype(np.float16)
-        # np.save("temp_outputs/input.npy", input)
         self._infer_stats["input_size"] = input.shape[-1]
 
-        # encoder_out = self.encoder.predict([input])[0].to_numpy().astype(np.float16)
-        enc_st = time.time()
-        encoder_out = self.encoder_onnx.run(None, {"input_values": input.astype(np.float32)})[0].astype(np.float16)
-        enc_et = time.time()
-        self._infer_stats["encoder_infer_time_ms"] = (enc_et - enc_st) * 1000
-        # np.save("temp_outputs/encoder_out.npy", encoder_out)
-        # encoder_out = np.load("temp_inputs/encoder_out.npy").astype(np.float16)
+        encoder_out = self.encoder_onnx.infer({"input_values": input.astype(np.float32)})[0].astype(np.float16)
+        self._infer_stats["encoder_infer_time_ms"] = self.encoder_onnx.infer_time_ms
 
-        dec_st = time.time()
         next_token, init_cache = self._run_decoder(tokens, encoder_out, seq_len=0)
         self._update_cache(init_cache, update_all=True)
         tokens.append(next_token)
-        dec_et = time.time()
-        self._infer_stats["decoder_uncached_infer_time_ms"] = (dec_et - dec_st) * 1000
 
-        dec_st = time.time()
         for i in range(1, max_len):
             next_token, cache = self._run_decoder([next_token], encoder_out, seq_len=i)
             self._update_cache(cache)
             tokens.append(next_token)
             if next_token == self.eos_token_id:
                 break
-        dec_et = time.time()
-        self._infer_stats["decoder_cached_infer_time_ms"] = (dec_et - dec_st) * 1000
         self._infer_stats["decoder_tokens"] = i
         return np.array([tokens])
 
@@ -196,31 +174,24 @@ class MoonshineOnnx(BaseSpeechToTextModel):
             quant_type,
             rate
         )
-        encoder_path = download_from_hf(
-            repo_id=hf_repo,
+        self.encoder_session = OnnxInferenceRunner.from_hf(
+            hf_repo=hf_repo,
             filename=f"onnx/merged/{model_size}/{self.quant_type}/encoder_model.onnx",
+            n_threads=n_threads
         )
-        decoder_path = download_from_hf(
-            repo_id=hf_repo,
+        self.decoder_session = OnnxInferenceRunner.from_hf(
+            hf_repo=hf_repo,
             filename=f"onnx/merged/{model_size}/{self.quant_type}/decoder_model_merged.onnx",
+            n_threads=n_threads
         )
-        opts = onnxruntime.SessionOptions()
-        if n_threads is not None:
-            opts.intra_op_num_threads = n_threads
-            opts.inter_op_num_threads = n_threads
-        self.encoder_session = onnxruntime.InferenceSession(encoder_path, opts, providers=['CPUExecutionProvider'])
-        self.decoder_session = onnxruntime.InferenceSession(decoder_path, opts, providers=['CPUExecutionProvider'])
-        
         self.transcribe(np.zeros(rate, dtype=np.float32))
 
     def _generate(self, audio: np.ndarray, max_len: int | None = None) -> np.ndarray:
         if max_len is None:
             max_len = min((audio.shape[-1] // self.rate) * 6, self.max_len)
         self._infer_stats["input_size"] = audio.shape[-1]
-        enc_st = time.time()
-        enc_out = self.encoder_session.run(None, {"input_values": audio})[0]
-        enc_et = time.time()
-        self._infer_stats["encoder_infer_time_ms"] = (enc_et - enc_st) * 1000
+        enc_out = self.encoder_session.infer({"input_values": audio})[0]
+        self._infer_stats["encoder_infer_time_ms"] = self.encoder_session.infer_time_ms
 
         batch_size = enc_out.shape[0]
         input_ids = np.array(
@@ -236,7 +207,7 @@ class MoonshineOnnx(BaseSpeechToTextModel):
         }
         gen_tokens = input_ids
 
-        dec_st = time.time()
+        dec_time = 0
         for i in range(max_len):
             use_cache_branch = i > 0
             dec_inputs = {
@@ -245,7 +216,8 @@ class MoonshineOnnx(BaseSpeechToTextModel):
                 "use_cache_branch": [use_cache_branch],
                 **past_kv,
             }
-            out = self.decoder_session.run(None, dec_inputs)
+            out = self.decoder_session.infer(dec_inputs)
+            dec_time += self.decoder_session.infer_time_ms
             logits = out[0]
             present_kv = out[1:]
             next_tokens = logits[:, -1].argmax(axis=-1, keepdims=True)
@@ -255,8 +227,8 @@ class MoonshineOnnx(BaseSpeechToTextModel):
             gen_tokens = np.concatenate([gen_tokens, next_tokens], axis=-1)
             if (next_tokens == self.eos_token_id).all():
                 break
-        dec_et = time.time()
-        self._infer_stats["decoder_infer_time_ms"] = (dec_et - dec_st) * 1000
+
+        self._infer_stats["decoder_infer_time_ms"] = dec_time
         self._infer_stats["decoder_tokens"] = i
         return gen_tokens
 
