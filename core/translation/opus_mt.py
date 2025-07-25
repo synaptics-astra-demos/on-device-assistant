@@ -22,11 +22,11 @@ class OpusMTBase(BaseTranslationModel):
         encoder: OnnxInferenceRunner | SynapInferenceRunner,
         decoder: OnnxInferenceRunner | SynapInferenceRunner,
         decoder_with_past: OnnxInferenceRunner | SynapInferenceRunner,
+        cache_shapes: dict[str, tuple[int | str, ...]],
         *,
-        cache_shapes: dict[str, tuple[int, ...]] | None,
-        max_inp_len: int | None,
-        max_tokens: int | None,
-        is_static: bool
+        max_inp_len: int | None = None,
+        max_tokens: int | None = None,
+        is_static: bool = False
     ):
         super().__init__(f"Helsinki-NLP/opus-mt-{source_lang}-{dest_lang}", max_inp_len, max_tokens)
 
@@ -145,6 +145,44 @@ class OpusMTBase(BaseTranslationModel):
         return tokens
 
 
+class OpusMTOnnx(OpusMTBase):
+
+    def __init__(
+        self,
+        source_lang: str,
+        dest_lang: str,
+        quant_type: Literal["float", "quantized"],
+        *,
+        n_threads: int | None = None
+    ):
+        encoder: OnnxInferenceRunner = OnnxInferenceRunner.from_uri(
+            url=f"https://github.com/spal-synaptics/on-device-assistant/releases/download/models-v1/opus-mt-{source_lang}-{dest_lang}-{quant_type}_encoder_model.onnx",
+            filename=f"models/Helsinki-NLP/opus-mt-{source_lang}-{dest_lang}/{quant_type}/encoder_model.onnx",
+            n_threads=n_threads
+        )
+        decoder: OnnxInferenceRunner = OnnxInferenceRunner.from_uri(
+            url=f"https://github.com/spal-synaptics/on-device-assistant/releases/download/models-v1/opus-mt-{source_lang}-{dest_lang}-{quant_type}_decoder_model.onnx",
+            filename=f"models/Helsinki-NLP/opus-mt-{source_lang}-{dest_lang}/{quant_type}/decoder_model.onnx",
+            n_threads=n_threads
+        )
+        decoder_with_past: OnnxInferenceRunner = OnnxInferenceRunner.from_uri(
+            url=f"https://github.com/spal-synaptics/on-device-assistant/releases/download/models-v1/opus-mt-{source_lang}-{dest_lang}-{quant_type}_decoder_with_past_model.onnx",
+            filename=f"models/Helsinki-NLP/opus-mt-{source_lang}-{dest_lang}/{quant_type}/decoder_with_past_model.onnx",
+            n_threads=n_threads
+        )
+        cache_shapes: dict[str, tuple[int, ...]] = {
+            inp.name: inp.shape for inp in decoder_with_past.model.get_inputs() if "past_key_values" in inp.name
+        }
+        super().__init__(
+            source_lang,
+            dest_lang,
+            encoder,
+            decoder,
+            decoder_with_past,
+            cache_shapes
+        )
+
+
 class OpusMTSynap(OpusMTBase):
 
     def __init__(
@@ -162,7 +200,7 @@ class OpusMTSynap(OpusMTBase):
         )
         if not use_synap_encoder:
             encoder_onnx: OnnxInferenceRunner = OnnxInferenceRunner.from_uri(
-                url=f"https://github.com/spal-synaptics/on-device-assistant/releases/download/models-v1/opus-mt-{source_lang}-{dest_lang}-{quant_type}_encoder.onnx",
+                url=f"https://github.com/spal-synaptics/on-device-assistant/releases/download/models-v1/opus-mt-{source_lang}-{dest_lang}-{quant_type}_encoder_model.onnx",
                 filename=f"models/Helsinki-NLP/opus-mt-{source_lang}-{dest_lang}/{quant_type}/encoder_model.onnx",
                 n_threads=n_threads
             )
@@ -186,7 +224,7 @@ class OpusMTSynap(OpusMTBase):
             encoder if use_synap_encoder else encoder_onnx,
             decoder,
             decoder_with_past,
-            cache_shapes=cache_shapes,
+            cache_shapes,
             max_inp_len=max_inp_len,
             max_tokens=max_tokens,
             is_static=True
@@ -255,17 +293,22 @@ def main():
     )
     args = parser.parse_args()
 
-    if "onnx" in args.model:
-        raise NotImplementedError("ONNX runtime not available yet")
-
-    quant_type = args.model.split("-")[-1]
-    translator = OpusMTSynap(
-        args.source_lang,
-        args.dest_lang,
-        quant_type,
-        use_synap_encoder=args.use_synap_encoder,
-        n_threads=args.threads
-    )
+    model_type, quant_type = args.model.split("-")
+    if model_type == "onnx":
+        translator = OpusMTOnnx(
+            args.source_lang,
+            args.dest_lang,
+            quant_type,
+            n_threads=args.threads
+        )
+    else:
+        translator = OpusMTSynap(
+            args.source_lang,
+            args.dest_lang,
+            quant_type,
+            use_synap_encoder=args.use_synap_encoder,
+            n_threads=args.threads
+        )
 
     all_results = {
         "model": f"opus-mt-{args.source_lang}-{args.dest_lang}",
