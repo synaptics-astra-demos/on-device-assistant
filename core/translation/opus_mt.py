@@ -19,7 +19,7 @@ class OpusMTBase(BaseTranslationModel):
         max_tokens: int | None,
         is_static: bool
     ):
-        super().__init__(f"Helsinki-NLP/opus-mt={source_lang}-{dest_lang}", max_inp_len, max_tokens)
+        super().__init__(f"Helsinki-NLP/opus-mt-{source_lang}-{dest_lang}", max_inp_len, max_tokens)
 
         self.source_lang = source_lang
         self.dest_lang = dest_lang
@@ -36,6 +36,7 @@ class OpusMTBase(BaseTranslationModel):
         self.start_token_id: int = self.config.pad_token_id
         self.end_token_id: int = self.config.eos_token_id
         self.encoder_pad_id: int = self.config.pad_token_id
+        self.decoder_cache: dict[str, np.ndarray] = {}
         self.all_cache_tensors: list[str] = [
             k for k in self.cache_shapes if "past_key_values" in k
         ]
@@ -85,10 +86,7 @@ class OpusMTBase(BaseTranslationModel):
         step_logits[self.encoder_pad_id] = -1e9
         return int(step_logits.argmax())
 
-    def _run_encoder(self, text: str) -> np.ndarray:
-        inputs = self._tokenize(text)
-        next_token = self.start_token_id
-        tokens = [next_token]
+    def _run_encoder(self, inputs: dict[str, np.ndarray]) -> np.ndarray:
         encoder_out = self.encoder.infer(inputs)[0]
         self._infer_stats["encoder_infer_time_ms"] = self.encoder.infer_time_ms
         return encoder_out
@@ -113,17 +111,19 @@ class OpusMTBase(BaseTranslationModel):
             self._infer_stats["decoder_with_past_infer_time_ms"] += self.decoder_with_past.infer_time_ms
         return self._next_token(logits), cache
 
-    def run(
+    def _generate(
         self, 
-        text: str, 
+        inputs: dict[str, np.ndarray], 
         max_tokens: int | None = None, 
-    ):
+    ) -> list[int]:
         self._infer_stats["decoder_tokens"] = 0
         if isinstance(max_tokens, int) and max_tokens < self.max_tokens:
             self.max_tokens = max_tokens
 
+        encoder_out = self._run_encoder(inputs)
         self._init_cache()
-        encoder_out = self._run_encoder(text)
+        next_token = self.start_token_id
+        tokens = [next_token]
 
         for i in range(self.max_tokens):
             next_token, cache = self._run_decoder([tokens[-1]], inputs["attention_mask"], encoder_out, seq_len=i)
@@ -133,7 +133,7 @@ class OpusMTBase(BaseTranslationModel):
             if next_token == self.end_token_id:
                 break
 
-        return self.tokenizer.decode(tokens, skip_special_tokens=True)
+        return tokens
 
 
 class OpusMTSynap(OpusMTBase):
@@ -156,9 +156,9 @@ class OpusMTSynap(OpusMTBase):
             filename=f"models/synap/opus-mt/{source_lang}-{dest_lang}/decoder_with_past.synap"
         )
         cache_shapes: dict[str, tuple[int, ...]] = {
-            inp.name: list(o.shape) for inp in self.decoder_cached.model.inputs if "past_key_values" in inp.name
+            inp.name: list(inp.shape) for inp in decoder_with_past.model.inputs if "past_key_values" in inp.name
         }
-        max_inp_len: int = next(inp.shape for inp in encoder.model.inputs if inp.name == "input_values")[-1]
+        max_inp_len: int = next(inp.shape for inp in encoder.model.inputs if inp.name == "input_ids")[-1]
         max_tokens: int = next(inp.shape for inp in decoder_with_past.model.inputs if "decoder" in inp.name)[2] # assuming shape [B, H, L, D]
 
         super().__init__(
@@ -169,6 +169,6 @@ class OpusMTSynap(OpusMTBase):
             decoder_with_past,
             cache_shapes=cache_shapes,
             max_inp_len=max_inp_len,
-            max_tokens=max_tokens
+            max_tokens=max_tokens,
             is_static=True
         )
