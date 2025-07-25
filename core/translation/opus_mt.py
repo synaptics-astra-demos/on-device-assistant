@@ -1,7 +1,16 @@
+from itertools import product
+from typing import Final
+from typing import Literal
+
 import numpy as np
 
 from .base import BaseTranslationModel
 from ..inference.runners import OnnxInferenceRunner, SynapInferenceRunner
+
+
+MODEL_TYPES: Final = ["onnx", "synap"]
+QUANT_TYPES: Final = ["float", "quantized"]
+MODEL_CHOICES: Final = [f"{t}-{q}" for (t, q) in product(MODEL_TYPES, QUANT_TYPES)]
 
 
 class OpusMTBase(BaseTranslationModel):
@@ -142,18 +151,28 @@ class OpusMTSynap(OpusMTBase):
         self,
         source_lang: str,
         dest_lang: str,
+        quant_type: Literal["float", "quantized"],
+        *,
+        use_synap_encoder: bool = False,
+        n_threads: int | None = None
     ):
         encoder: SynapInferenceRunner = SynapInferenceRunner.from_uri(
-            url=f"https://github.com/spal-synaptics/on-device-assistant/releases/download/models-v1/opus-mt-{source_lang}-{dest_lang}_encoder.synap",
-            filename=f"models/synap/opus-mt/{source_lang}-{dest_lang}/encoder.synap"
+            url=f"https://github.com/spal-synaptics/on-device-assistant/releases/download/models-v1/opus-mt-{source_lang}-{dest_lang}-{quant_type}_encoder.synap",
+            filename=f"models/synap/opus-mt/{source_lang}-{dest_lang}/{quant_type}/encoder.synap"
         )
+        if not use_synap_encoder:
+            encoder_onnx: OnnxInferenceRunner = OnnxInferenceRunner.from_uri(
+                url=f"https://github.com/spal-synaptics/on-device-assistant/releases/download/models-v1/opus-mt-{source_lang}-{dest_lang}-{quant_type}_encoder.onnx",
+                filename=f"models/Helsinki-NLP/opus-mt-{source_lang}-{dest_lang}/{quant_type}/encoder_model.onnx",
+                n_threads=n_threads
+            )
         decoder: SynapInferenceRunner = SynapInferenceRunner.from_uri(
-            url=f"https://github.com/spal-synaptics/on-device-assistant/releases/download/models-v1/opus-mt-{source_lang}-{dest_lang}_decoder.synap",
-            filename=f"models/synap/opus-mt/{source_lang}-{dest_lang}/decoder.synap"
+            url=f"https://github.com/spal-synaptics/on-device-assistant/releases/download/models-v1/opus-mt-{source_lang}-{dest_lang}-{quant_type}_decoder.synap",
+            filename=f"models/synap/opus-mt/{source_lang}-{dest_lang}/{quant_type}/decoder.synap"
         )
         decoder_with_past: SynapInferenceRunner = SynapInferenceRunner.from_uri(
-            url=f"https://github.com/spal-synaptics/on-device-assistant/releases/download/models-v1/opus-mt-{source_lang}-{dest_lang}_decoder_with_past.synap",
-            filename=f"models/synap/opus-mt/{source_lang}-{dest_lang}/decoder_with_past.synap"
+            url=f"https://github.com/spal-synaptics/on-device-assistant/releases/download/models-v1/opus-mt-{source_lang}-{dest_lang}-{quant_type}_decoder_with_past.synap",
+            filename=f"models/synap/opus-mt/{source_lang}-{dest_lang}/{quant_type}/decoder_with_past.synap"
         )
         cache_shapes: dict[str, tuple[int, ...]] = {
             inp.name: list(inp.shape) for inp in decoder_with_past.model.inputs if "past_key_values" in inp.name
@@ -164,7 +183,7 @@ class OpusMTSynap(OpusMTBase):
         super().__init__(
             source_lang,
             dest_lang,
-            encoder,
+            encoder if use_synap_encoder else encoder_onnx,
             decoder,
             decoder_with_past,
             cache_shapes=cache_shapes,
@@ -172,3 +191,116 @@ class OpusMTSynap(OpusMTBase):
             max_tokens=max_tokens,
             is_static=True
         )
+
+
+def main():
+    import argparse
+    import json
+    from pathlib import Path
+
+    def _dump_results_json(results: dict, path: Path):
+        with open(path, "w") as f:
+            json.dump(results, f, indent=2)
+        print(f"Results saved to {path}")
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "texts",
+        metavar="TEXT",
+        nargs="+",
+        type=str,
+        help="Text(s) to translate"
+    )
+    parser.add_argument(
+        "-s", "--source-lang",
+        type=str,
+        default="en",
+        help="Source language code (default: %(default)s)"
+    )
+    parser.add_argument(
+        "-d", "--dest-lang",
+        type=str,
+        default="fr",
+        help="Destination language code (default: %(default)s)"
+    )
+    parser.add_argument(
+        "-m", "--model",
+        type=str,
+        metavar="MODEL",
+        choices=MODEL_CHOICES,
+        default="synap-float",
+        help="Model type to use for inference (available:\n%(choices)s)"
+    )
+    parser.add_argument(
+        "-o", "--dump-out",
+        type=str,
+        metavar="JSON",
+        help="Dump inference results to JSON file",
+    )
+    parser.add_argument(
+        "-j", "--threads",
+        type=int,
+        help="Number of cores to use for CPU execution (default: all)"
+    )
+    parser.add_argument(
+        "--use-synap-encoder",
+        action="store_true",
+        default=False,
+        help="Run NPU based SyNAP encoder instead of CPU based ONNX encoder"
+    )
+    parser.add_argument(
+        "-v", "--verbose",
+        action="store_true",
+        help="Display verbose stats"
+    )
+    args = parser.parse_args()
+
+    if "onnx" in args.model:
+        raise NotImplementedError("ONNX runtime not available yet")
+
+    quant_type = args.model.split("-")[-1]
+    translator = OpusMTSynap(
+        args.source_lang,
+        args.dest_lang,
+        quant_type,
+        use_synap_encoder=args.use_synap_encoder,
+        n_threads=args.threads
+    )
+
+    all_results = {
+        "model": f"opus-mt-{args.source_lang}-{args.dest_lang}",
+        "model_type": args.model,
+        "source_lang": args.source_lang,
+        "dest_lang": args.dest_lang,
+        "results": []
+    }
+    print(f"\nTranslating {args.source_lang} to {args.dest_lang}...\n")
+    for text in args.texts:
+        print()
+        result = translator.translate(text)
+        print(f"Translated ({translator.last_infer_time * 1000:.2f} ms): \"{result}\"")
+        curr_results = {
+            "input": text,
+            "translation": result,
+            "total_infer_time_ms": translator.last_infer_time * 1000,
+        }
+        if args.verbose:
+            print(f"Detailed inference stats:\n{json.dumps(translator.last_infer_stats, indent=2)}")
+            curr_results["detailed_infer_stats"] = translator.last_infer_stats
+        all_results["results"].append(curr_results)
+        print()
+    if args.dump_out:
+        _dump_results_json(all_results, Path(args.dump_out))
+
+
+if __name__ == "__main__":
+    import logging
+    handler = logging.StreamHandler()
+    formatter = logging.Formatter("%(levelname)s: %(message)s")
+    handler.setFormatter(formatter)
+    root_logger = logging.getLogger()
+    root_logger.setLevel(logging.INFO)
+    root_logger.handlers.clear()
+    root_logger.addHandler(handler)
+
+    main()
