@@ -83,5 +83,5 @@ class SynapInferenceRunner(InferenceRunner):
 
     def _infer(self, inputs: dict[str, np.ndarray]) -> list[np.ndarray]:
         for tensor in self._net.inputs:
-            tensor.assign(inputs[tensor.name].astype(tensor.data_type.np_type()))
+            tensor.assign(np.asarray(inputs[tensor.name]).astype(tensor.data_type.np_type()))
         return [o.to_numpy() for o in self._net.predict()]
