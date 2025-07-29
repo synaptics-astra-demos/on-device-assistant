@@ -1,8 +1,6 @@
 import logging
 from typing import Literal
 
-from .opus_mt import OpusMTOnnx, OpusMTSynap, QUANT_TYPES
-
 logger = logging.getLogger(__name__)
 
 
@@ -13,7 +11,9 @@ def opus_mt_factory(
     n_threads: int | None = None,
     cpu_only: bool = False,
     use_synap_encoder: bool = False
-) -> OpusMTOnnx | OpusMTSynap:
+) -> "OpusMTOnnx | OpusMTSynap":
+    from .opus_mt import OpusMTOnnx, OpusMTSynap, QUANT_TYPES
+
     if quant_type not in QUANT_TYPES:
         raise ValueError(f"Invalid quantization type: {quant_type}. Supported types are: {QUANT_TYPES}.")
     if cpu_only:
