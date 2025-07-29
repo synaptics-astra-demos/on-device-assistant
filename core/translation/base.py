@@ -43,23 +43,12 @@ class BaseTranslationModel(ABC):
     def avg_infer_time(self) -> float | None:
         return (self.total_infer_time / self.n_infer) if self._transcribe_times else None
 
-    def _tokenize(self, input: str) -> dict[str, np.ndarray]:
-        tokenizer_params = {
-            "return_tensors": "np"
-        }
+    def _tokenize(self, text: str) -> dict[str, np.ndarray]:
+        params = {"return_tensors": "np"}
         if isinstance(self.max_inp_len, int):
-            tokenizer_params.update({
-                "max_length": self.max_inp_len,
-                "padding": "max_length",
-                "truncation": True
-            })
-        inputs = self.tokenizer(
-            input,
-            **tokenizer_params
-        )
-        self._infer_stats["input_size"] = inputs["input_ids"].shape[-1]
-        return dict(inputs)
-    
+            params.update({"max_length": self.max_inp_len, "padding": "max_length", "truncation": True})
+        return dict(self.tokenizer(text, **params))
+
     @abstractmethod
     def _generate(self, inputs: dict[str, np.ndarray], max_len: int | None = None) -> list[int]:
         ...
@@ -68,6 +57,7 @@ class BaseTranslationModel(ABC):
         self._infer_stats = {}
         st = time.time()
         inputs = self._tokenize(text)
+        self._infer_stats["input_size"] = inputs["input_ids"].shape[-1]
         tokens = self._generate(inputs)
         text = self.tokenizer.decode(tokens, skip_special_tokens=True)
         et = time.time()
