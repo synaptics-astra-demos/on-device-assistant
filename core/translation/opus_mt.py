@@ -12,6 +12,7 @@ from ..inference.runners import OnnxInferenceRunner, SynapInferenceRunner
 MODEL_TYPES: Final = ["onnx", "synap"]
 QUANT_TYPES: Final = ["float", "quantized"]
 MODEL_CHOICES: Final = [f"{t}-{q}" for (t, q) in product(MODEL_TYPES, QUANT_TYPES)]
+NUM_BEAMS: Final = 4
 
 
 class OpusMTBase(BaseTranslationModel):
@@ -28,7 +29,7 @@ class OpusMTBase(BaseTranslationModel):
         max_inp_len: int | None = None,
         max_tokens: int | None = None,
         is_static: bool = False,
-        num_beams: int = 5,
+        num_beams: int | None = None,
         length_penalty: float = 1.0,
     ):
         super().__init__(f"Helsinki-NLP/opus-mt-{source_lang}-{dest_lang}", max_inp_len, max_tokens)
@@ -40,7 +41,7 @@ class OpusMTBase(BaseTranslationModel):
         self.decoder_with_past = decoder_with_past
         self.cache_shapes = cache_shapes
         self.is_static = is_static
-        self.num_beams = num_beams
+        self.num_beams = num_beams if isinstance(num_beams, int) and num_beams > 0 else int(self.config.to_dict().get("num_beams", NUM_BEAMS))
         self.length_penalty = length_penalty
 
         self.n_layers: int = int(self.config.num_hidden_layers)
@@ -218,7 +219,7 @@ class OpusMTOnnx(OpusMTBase):
         dest_lang: str,
         quant_type: Literal["float", "quantized"],
         *,
-        num_beams: int = 5,
+        num_beams: int | None = None,
         n_threads: int | None = None
     ):
         encoder: OnnxInferenceRunner = OnnxInferenceRunner.from_uri(
@@ -258,7 +259,7 @@ class OpusMTSynap(OpusMTBase):
         dest_lang: str,
         quant_type: Literal["float", "quantized"],
         *,
-        num_beams: int = 5,
+        num_beams: int | None = None,
         use_synap_encoder: bool = False,
         n_threads: int | None = None
     ):
@@ -341,8 +342,7 @@ def main():
     parser.add_argument(
         "-b", "--num-beams",
         type=int,
-        default=5,
-        help="Number of beams to use for beam search during decoding (default: %(default)s)"        
+        help="Specify number of beams to use for decoding beam search"        
     )
     parser.add_argument(
         "-o", "--dump-out",
