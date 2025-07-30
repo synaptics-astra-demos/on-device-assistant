@@ -116,7 +116,7 @@ class MoonshineSynap(BaseSpeechToTextModel):
                 "input_ids": np.asarray(input_ids, dtype=np.int32),
                 "encoder_hidden_states": encoder_out
             }
-            logits, *cache = [o.to_numpy() for o in self.decoder.infer(decoder_inputs)]
+            logits, *cache = self.decoder.infer(decoder_inputs)
             self._infer_stats["decoder_infer_time_ms"] = self.decoder.infer_time_ms
         else:
             decoder_inputs = {
@@ -124,7 +124,7 @@ class MoonshineSynap(BaseSpeechToTextModel):
                 **self.decoder_cache
             }
             decoder_inputs["current_len"] = np.array([[seq_len]], dtype=np.int32)
-            logits, *cache = [o.to_numpy() for o in self.decoder_with_past.infer(decoder_inputs)]
+            logits, *cache = self.decoder_with_past.infer(decoder_inputs)
             if not self._infer_stats.get("decoder_with_past_infer_time_ms"):
                 self._infer_stats["decoder_with_past_infer_time_ms"] = 0
             self._infer_stats["decoder_with_past_infer_time_ms"] += self.decoder_with_past.infer_time_ms
