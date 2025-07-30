@@ -41,26 +41,26 @@ class MoonshineSynap(BaseSpeechToTextModel):
             url=f"https://github.com/spal-synaptics/on-device-assistant/releases/download/models-v1/moonshine_{model_size}_{self.quant_type}_encoder.synap",
             filename=f"models/synap/moonshine/{model_size}/{self.quant_type}/encoder.synap"
         )
-        self.decoder_uncached = SynapInferenceRunner.from_uri(
-            url=f"https://github.com/spal-synaptics/on-device-assistant/releases/download/models-v1/moonshine_{model_size}_{self.quant_type}_decoder_uncached.synap",
-            filename=f"models/synap/moonshine/{model_size}/{self.quant_type}/decoder_uncached.synap"
+        self.decoder = SynapInferenceRunner.from_uri(
+            url=f"https://github.com/spal-synaptics/on-device-assistant/releases/download/models-v1/moonshine_{model_size}_{self.quant_type}_decoder.synap",
+            filename=f"models/synap/moonshine/{model_size}/{self.quant_type}/decoder.synap"
         )
-        self.decoder_cached = SynapInferenceRunner.from_uri(
-            url=f"https://github.com/spal-synaptics/on-device-assistant/releases/download/models-v1/moonshine_{model_size}_{self.quant_type}_decoder_cached.synap",
-            filename=f"models/synap/moonshine/{model_size}/{self.quant_type}/decoder_cached.synap"
+        self.decoder_with_past = SynapInferenceRunner.from_uri(
+            url=f"https://github.com/spal-synaptics/on-device-assistant/releases/download/models-v1/moonshine_{model_size}_{self.quant_type}_decoder_with_past.synap",
+            filename=f"models/synap/moonshine/{model_size}/{self.quant_type}/decoder_with_past.synap"
         )
         self.encoder_pad_id: int = 0
         self.max_tok_per_s = max_tok_per_s
-        self.cached_decoder_shapes: dict[str, list[int]] = {o.name: list(o.shape) for o in self.decoder_cached.model.inputs}
+        self.cache_shapes: dict[str, list[int]] = {o.name: list(o.shape) for o in self.decoder_with_past.model.inputs}
         self.max_inp_len: int = next(inp.shape for inp in self.encoder.model.inputs if inp.name == "input_values")[-1]
-        self.max_tokens: int = next(inp.shape for inp in self.decoder_cached.model.inputs if "decoder" in inp.name)[2] # assuming shape [B, H, L, D]
+        self.max_tokens: int = next(inp.shape for inp in self.decoder_with_past.model.inputs if "decoder" in inp.name)[2] # assuming shape [B, H, L, D]
         if isinstance(max_tok_per_s, int) and max_tok_per_s > 0:
             user_max_tokens: int = int(self.max_inp_len / 16_000) * max_tok_per_s
             if user_max_tokens > self.max_tokens:
                 raise ValueError(f"Provided max tokens/sec ({max_tok_per_s}) is too high for model (max: {int(self.max_tokens / self.max_inp_len * 16_000)} tokens/sec)")
             self.max_tokens = user_max_tokens
 
-        self.all_cache_tensors = [inp.name for inp in self.decoder_cached.model.inputs if "past_key_values" in inp.name]
+        self.all_cache_tensors = [inp.name for inp in self.decoder_with_past.model.inputs if "past_key_values" in inp.name]
         self.dec_cache_tensors = [k for k in self.all_cache_tensors if "encoder" not in k]
         self.decoder_cache: dict[str, np.ndarray] = {}
 
@@ -107,7 +107,7 @@ class MoonshineSynap(BaseSpeechToTextModel):
         if len(cache_tensors) != len(new_values):
             raise RuntimeError(f"Cache tensors mismatch: expected {len(cache_tensors)} new values, got {len(new_values)}")
         for k, v in zip(cache_tensors, new_values):
-            self.decoder_cache[k] = self._pad_cache_tensor(v, self.cached_decoder_shapes[k])
+            self.decoder_cache[k] = self._pad_cache_tensor(v, self.cache_shapes[k])
     
     def _run_decoder(self, input_tokens: list[int], encoder_out: list[np.ndarray], *, seq_len: int) -> tuple[int, list[np.ndarray]]:
         input_ids = [input_tokens]
@@ -116,18 +116,18 @@ class MoonshineSynap(BaseSpeechToTextModel):
                 "input_ids": np.asarray(input_ids, dtype=np.int32),
                 "encoder_hidden_states": encoder_out
             }
-            logits, *cache = self.decoder_uncached.infer(decoder_inputs)
-            self._infer_stats["decoder_uncached_infer_time_ms"] = self.decoder_uncached.infer_time_ms
+            logits, *cache = self.decoder.infer(decoder_inputs)
+            self._infer_stats["decoder_infer_time_ms"] = self.decoder.infer_time_ms
         else:
             decoder_inputs = {
                 "input_ids": np.asarray(input_ids, dtype=np.int32),
                 **self.decoder_cache
             }
             decoder_inputs["current_len"] = np.array([[seq_len]], dtype=np.int32)
-            logits, *cache = self.decoder_cached.infer(decoder_inputs)
-            if not self._infer_stats.get("decoder_cached_infer_time_ms"):
-                self._infer_stats["decoder_cached_infer_time_ms"] = 0
-            self._infer_stats["decoder_cached_infer_time_ms"] += self.decoder_cached.infer_time_ms
+            logits, *cache = self.decoder_with_past.infer(decoder_inputs)
+            if not self._infer_stats.get("decoder_with_past_infer_time_ms"):
+                self._infer_stats["decoder_with_past_infer_time_ms"] = 0
+            self._infer_stats["decoder_with_past_infer_time_ms"] += self.decoder_with_past.infer_time_ms
         next_token = logits[0, -1].argmax().item()
         return next_token, cache
 
