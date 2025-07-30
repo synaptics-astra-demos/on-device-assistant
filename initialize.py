@@ -49,12 +49,12 @@ if __name__ == "__main__":
         filename=MODELS_DIR / f"synap/moonshine/tiny/float/encoder.synap"
     )
     download_from_url(
-        url="https://github.com/spal-synaptics/on-device-assistant/releases/download/models-v1/moonshine_tiny_float_decoder_uncached.synap",
-        filename=MODELS_DIR / f"synap/moonshine/tiny/float/decoder_uncached.synap"
+        url="https://github.com/spal-synaptics/on-device-assistant/releases/download/models-v1/moonshine_tiny_float_decoder.synap",
+        filename=MODELS_DIR / f"synap/moonshine/tiny/float/decoder.synap"
     )
     download_from_url(
-        url="https://github.com/spal-synaptics/on-device-assistant/releases/download/models-v1/moonshine_tiny_float_decoder_cached.synap",
-        filename=MODELS_DIR / f"synap/moonshine/tiny/float/decoder_cached.synap"
+        url="https://github.com/spal-synaptics/on-device-assistant/releases/download/models-v1/moonshine_tiny_float_decoder_with_past.synap",
+        filename=MODELS_DIR / f"synap/moonshine/tiny/float/decoder_with_past.synap"
     )
     # download piper-tts models
     download_from_hf(
