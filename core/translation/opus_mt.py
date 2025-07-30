@@ -260,14 +260,14 @@ class OpusMTSynap(OpusMTBase):
         quant_type: Literal["float", "quantized"],
         *,
         num_beams: int | None = None,
-        use_synap_encoder: bool = False,
+        use_onnx_encoder: bool | None = None,
         n_threads: int | None = None
     ):
         encoder: SynapInferenceRunner = SynapInferenceRunner.from_uri(
             url=f"https://github.com/spal-synaptics/on-device-assistant/releases/download/models-v1/opus-mt-{source_lang}-{dest_lang}-{quant_type}_encoder.synap",
             filename=f"models/synap/opus-mt/{source_lang}-{dest_lang}/{quant_type}/encoder.synap"
         )
-        if not use_synap_encoder:
+        if use_onnx_encoder:
             encoder_onnx: OnnxInferenceRunner = OnnxInferenceRunner.from_uri(
                 url=f"https://github.com/spal-synaptics/on-device-assistant/releases/download/models-v1/opus-mt-{source_lang}-{dest_lang}-{quant_type}_encoder_model.onnx",
                 filename=f"models/Helsinki-NLP/opus-mt-{source_lang}-{dest_lang}/{quant_type}/encoder_model.onnx",
@@ -290,7 +290,7 @@ class OpusMTSynap(OpusMTBase):
         super().__init__(
             source_lang,
             dest_lang,
-            encoder if use_synap_encoder else encoder_onnx,
+            encoder_onnx if use_onnx_encoder else encoder,
             decoder,
             decoder_with_past,
             cache_shapes,
@@ -356,7 +356,7 @@ def main():
         help="Number of cores to use for CPU execution (default: all)"
     )
     parser.add_argument(
-        "--use-synap-encoder",
+        "--use-onnx-encoder",
         action="store_true",
         default=False,
         help="Run NPU based SyNAP encoder instead of CPU based ONNX encoder"
