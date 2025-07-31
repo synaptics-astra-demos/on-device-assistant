@@ -127,6 +127,8 @@ class OpusMTBase(BaseTranslationModel):
         inputs: dict[str, np.ndarray], 
         max_tokens: int | None = None, 
     ) -> list[int]:
+        self._infer_stats["num_beams"] = self.num_beams
+        self._infer_stats["length_penalty"] = self.length_penalty
         self._infer_stats["decoder_tokens"] = 0
         if isinstance(max_tokens, int) and max_tokens < self.max_tokens:
             self.max_tokens = max_tokens
@@ -383,7 +385,7 @@ def main():
             args.dest_lang,
             quant_type,
             num_beams=args.num_beams,
-            use_synap_encoder=args.use_synap_encoder,
+            use_onnx_encoder=args.use_onnx_encoder,
             n_threads=args.threads
         )
 
