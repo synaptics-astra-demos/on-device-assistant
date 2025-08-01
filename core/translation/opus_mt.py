@@ -1,18 +1,107 @@
+import json
 import math
 from itertools import product
-from typing import Final
-from typing import Literal
+from typing import Any, Final, Iterable, Literal
 
 import numpy as np
+import sentencepiece as spm
 
 from .base import BaseTranslationModel
 from ..inference.runners import OnnxInferenceRunner, SynapInferenceRunner
+from ..utils.download import download_from_hf
 
 
 MODEL_TYPES: Final = ["onnx", "synap"]
 QUANT_TYPES: Final = ["float", "quantized"]
 MODEL_CHOICES: Final = [f"{t}-{q}" for (t, q) in product(MODEL_TYPES, QUANT_TYPES)]
 NUM_BEAMS: Final = 4
+
+
+class OpusMTTokenizer:
+
+    def __init__(
+        self,
+        hf_repo: str
+    ):
+        self._encoder = spm.SentencePieceProcessor(download_from_hf(hf_repo, "source.spm"))
+        self._decoder = spm.SentencePieceProcessor(download_from_hf(hf_repo, "target.spm"))
+        with open(download_from_hf(hf_repo, "config.json"), "r") as f:
+            self._config: dict[str, Any] = json.load(f)
+        self._max_input_length: int = int(self._config["max_position_embeddings"])
+        self._pad_token = int(self._config["pad_token_id"])
+        self._eos_token = int(self._config["eos_token_id"])
+        self._special_tokens: set[int] = {
+            int(tok_id) for tok_name, tok_id in self._config.items() if "token_id" in tok_name
+        }
+        with open(download_from_hf(hf_repo, "vocab.json"), "r") as f:
+            self._vocab: dict[str, int] = json.load(f)
+            self._token_map: dict[int, str] = {v: k for k, v in self._vocab.items()}
+
+    def __call__(
+        self,
+        text: str,
+        max_length: int | None = None
+    ) -> dict[str, np.ndarray]:
+        return self.encode(text, max_length)
+
+    def _create_attn_mask(
+        self,
+        tokens: np.ndarray
+    ):
+        assert tokens.ndim == 1
+        return (tokens != self._pad_token).astype(np.int64)
+
+    def _encode_inputs(
+        self,
+        text: str,
+        max_length: int | None,
+    ) -> np.ndarray:
+        tokens = [self._vocab[raw_token] for raw_token in self._encoder.encode(text, out_type=str)]
+        tokens.append(self._eos_token)
+        n_tokens = len(tokens)
+        max_length = max_length or n_tokens
+        if n_tokens >= max_length:
+            tokens = tokens[:max_length]
+            tokens[-1] = self._eos_token
+        else:
+            diff = max_length - len(tokens)
+            tokens = tokens + [self._pad_token] * diff
+        return np.asarray(tokens, dtype=np.int64)
+
+    def encode(
+        self,
+        text: str,
+        max_length: int | None = None
+    ) -> dict[str, np.ndarray]:
+        if not isinstance(text, str):
+            raise TypeError(f"Input must be str, received type '{type(text)}'")
+        if max_length is None:
+            max_input_length = None
+        else:
+            max_input_length = self._max_input_length
+            if isinstance(max_length, int) and 0 < max_length < self._max_input_length:
+                max_input_length = max_length
+        tokens = self._encode_inputs(text, max_input_length)
+        return {
+            "input_ids": tokens[np.newaxis, :],
+            "attention_mask": self._create_attn_mask(tokens)[np.newaxis, :]
+        }
+
+    def decode(
+        self,
+        tokens: Iterable[int],
+        skip_special_tokens: bool = False
+    ) -> str:
+        if isinstance(tokens, np.ndarray):
+            tokens = tokens.flatten().tolist()
+        if not (isinstance(tokens, Iterable) and all(isinstance(i, int) for i in tokens)):
+            raise TypeError(f"Tokens must be an iterable of integers")
+        mapped: list[int] = []
+        for token in tokens:
+            if skip_special_tokens and token in self._special_tokens:
+                continue
+            mapped.append(self._token_map[token])
+        return self._decoder.decode(mapped)
 
 
 class OpusMTBase(BaseTranslationModel):
@@ -32,7 +121,11 @@ class OpusMTBase(BaseTranslationModel):
         num_beams: int | None = None,
         length_penalty: float = 1.0,
     ):
-        super().__init__(f"Helsinki-NLP/opus-mt-{source_lang}-{dest_lang}", max_inp_len, max_tokens)
+        super().__init__()
+
+        self.tokenizer = OpusMTTokenizer(f"Helsinki-NLP/opus-mt-{source_lang}-{dest_lang}")
+        with open(download_from_hf(f"Helsinki-NLP/opus-mt-{source_lang}-{dest_lang}", "config.json"), "r") as f:
+            self.config: dict[str, Any] = json.load(f)
 
         self.source_lang = source_lang
         self.dest_lang = dest_lang
@@ -40,17 +133,19 @@ class OpusMTBase(BaseTranslationModel):
         self.decoder = decoder
         self.decoder_with_past = decoder_with_past
         self.cache_shapes = cache_shapes
+        self.max_inp_len = max_inp_len
+        self.max_tokens = max_tokens
         self.is_static = is_static
-        self.num_beams = num_beams if isinstance(num_beams, int) and num_beams > 0 else int(self.config.to_dict().get("num_beams", NUM_BEAMS))
+        self.num_beams = num_beams if isinstance(num_beams, int) and num_beams > 0 else int(self.config.get("num_beams", NUM_BEAMS))
         self.length_penalty = length_penalty
 
-        self.n_layers: int = int(self.config.num_hidden_layers)
-        self.n_kv_heads: int = int(self.config.decoder_attention_heads)
-        self.hidden_size: int = int(self.config.d_model)
+        self.n_layers: int = int(self.config["num_hidden_layers"])
+        self.n_kv_heads: int = int(self.config["decoder_attention_heads"])
+        self.hidden_size: int = int(self.config["d_model"])
         self.head_dim: int = self.hidden_size // self.n_kv_heads
-        self.start_token_id: int = self.config.pad_token_id
-        self.end_token_id: int = self.config.eos_token_id
-        self.encoder_pad_id: int = self.config.pad_token_id
+        self.start_token_id: int = self.config["decoder_start_token_id"]
+        self.end_token_id: int = self.config["eos_token_id"]
+        self.encoder_pad_id: int = self.config["pad_token_id"]
         self.decoder_cache: dict[str, np.ndarray] = {}
         self.all_cache_tensors: list[str] = [
             k for k in self.cache_shapes if "past_key_values" in k
@@ -83,6 +178,15 @@ class OpusMTBase(BaseTranslationModel):
             for a in ("decoder", "encoder")
             for b in ("key", "value")
         }
+
+    def _tokenize(self, text: str) -> dict[str, np.ndarray]:
+        params = {"text": text}
+        if isinstance(self.max_inp_len, int):
+            params.update({"max_length": self.max_inp_len})
+        return dict(self.tokenizer(**params))
+
+    def _decode_tokens(self, tokens: Iterable[int], skip_special_tokens: bool = True) -> str:
+        return self.tokenizer.decode(tokens, skip_special_tokens)
 
     def _decoder_logits(
         self,
@@ -140,7 +244,7 @@ class OpusMTBase(BaseTranslationModel):
         beam_scores: np.ndarray = np.full(self.num_beams, -np.inf, dtype=np.float32)
         beam_scores[0] = 0.0
         done: list[bool] = [False] * self.num_beams
-        vocab_size: int = int(self.config.vocab_size)
+        vocab_size: int = int(self.config["vocab_size"])
 
         for step in range(self.max_tokens):
             all_scores, step_caches = [], []
