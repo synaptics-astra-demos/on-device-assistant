@@ -17,6 +17,7 @@ def download_from_url(url: str, filename: str | os.PathLike, chunk_size: int = 8
 
     filename.parent.mkdir(exist_ok=True, parents=True)
 
+    logger.info(f"Attempting download from {url} ...")
     response = requests.get(url, stream=True)
     response.raise_for_status()
 
@@ -29,6 +30,7 @@ def download_from_url(url: str, filename: str | os.PathLike, chunk_size: int = 8
                 f.write(chunk)
                 progress.update(len(chunk))
     progress.close()
+    logger.debug("Download completed.")
 
     return filename
 
@@ -64,7 +66,7 @@ def download_from_hf(repo_id: str, filename: str | os.PathLike):
     else:
         logger.debug("SYNAPTICS_SERVER_IP not set. Skipping local server attempt.")
 
-    logger.info("Attempting to download model from Hugging Face Hub...")
+    logger.info("Attempting download from Hugging Face Hub ...")
     downloaded_file = hf_hub_download(
         repo_id=repo_id,
         filename=filename,
