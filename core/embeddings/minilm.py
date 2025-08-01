@@ -1,15 +1,14 @@
-import json
 import logging
 import os
 import time
-from pathlib import Path
 
 import numpy as np
 from llama_cpp import Llama
 from synap import Network
-from transformers import AutoTokenizer
+from tokenizers import Tokenizer, Encoding
 
 from .base import BaseEmbeddingsModel
+from ..utils.download import download_from_hf
 
 logger = logging.getLogger(__name__)
 
@@ -61,13 +60,15 @@ class MiniLMSynap(BaseEmbeddingsModel):
             normalize
         )
         self.model = Network(str(self.model_path))
-        self.tokenizer = AutoTokenizer.from_pretrained(hf_model)
+        self.tokenizer: Tokenizer = Tokenizer.from_file(download_from_hf(repo_id=hf_model, filename="tokenizer.json"))
         logger.info(f"Loaded SyNAP MiniLM embeddings model '{self.model_path}'")
 
         token_dims = sorted([inp.shape[1] for inp in self.model.inputs])
         if len(set(token_dims)) > 1:
             logger.warning("Multiple dimensions found for token len, selecting the largest")
         self.token_len = token_dims[-1]
+        self.tokenizer.enable_truncation(self.token_len)
+        self.tokenizer.enable_padding(length=self.token_len)
 
     @staticmethod
     def mean_pooling(
@@ -85,13 +86,12 @@ class MiniLMSynap(BaseEmbeddingsModel):
         return embeddings / np.clip(norms, a_min=1e-9, a_max=None)
 
     def _get_input_tokens(self, input: str) -> dict[str, np.ndarray]:
-        tokens = self.tokenizer(input, return_tensors="np", padding="max_length", truncation=True, max_length=self.token_len)
-        tokens_np = {}
-        model_inputs_info = {inp.name: inp.data_type.np_type() for inp in self.model.inputs}
-        for inp_name, inp_tokens in tokens.items():
-            dtype = model_inputs_info[inp_name]
-            tokens_np[inp_name] = inp_tokens.astype(dtype)
-        return tokens_np
+        enc: Encoding = self.tokenizer.encode(input, add_special_tokens=True)
+        return {
+            "input_ids": np.asarray(enc.ids, dtype=np.int32)[np.newaxis, :],
+            "attention_mask": np.asarray(enc.attention_mask, dtype=np.int32)[np.newaxis, :],
+            "token_type_ids": np.asarray(enc.type_ids, dtype=np.int32)[np.newaxis, :]
+        }
 
     def generate(self, text: str) -> list[float]:
         tokens = self._get_input_tokens(text)
