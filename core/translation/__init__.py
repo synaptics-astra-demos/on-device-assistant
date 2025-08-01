@@ -10,7 +10,7 @@ def opus_mt_factory(
     quant_type: Literal["float", "quantized"],
     n_threads: int | None = None,
     cpu_only: bool = False,
-    use_synap_encoder: bool = False
+    use_onnx_encoder: bool = False
 ) -> "OpusMTOnnx | OpusMTSynap":
     from .opus_mt import OpusMTOnnx, OpusMTSynap, QUANT_TYPES
 
@@ -21,7 +21,7 @@ def opus_mt_factory(
             source_lang, dest_lang, quant_type, n_threads=n_threads
         )
     return OpusMTSynap(
-        source_lang, dest_lang, quant_type, n_threads=n_threads, use_synap_encoder=use_synap_encoder
+        source_lang, dest_lang, quant_type, n_threads=n_threads, use_onnx_encoder=use_onnx_encoder
     )
 
 

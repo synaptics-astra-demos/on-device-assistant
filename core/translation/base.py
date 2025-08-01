@@ -1,25 +1,14 @@
+import time
 from abc import ABC, abstractmethod
 from collections import deque
-import time
+from typing import Iterable
 
 import numpy as np
-
-from transformers import AutoTokenizer, AutoConfig
 
 
 class BaseTranslationModel(ABC):
 
-    def __init__(
-        self,
-        hf_repo: str,
-        max_inp_len: int | None,
-        max_tokens: int | None
-    ):
-        self.tokenizer = AutoTokenizer.from_pretrained(hf_repo)
-        self.config = AutoConfig.from_pretrained(hf_repo)
-        self.max_inp_len: int = max_inp_len
-        self.max_tokens: int = max_tokens or self.config.max_length
-    
+    def __init__(self):
         self._transcribe_times = deque(maxlen=100)
         self._infer_stats = {}
 
@@ -43,14 +32,16 @@ class BaseTranslationModel(ABC):
     def avg_infer_time(self) -> float | None:
         return (self.total_infer_time / self.n_infer) if self._transcribe_times else None
 
+    @abstractmethod
     def _tokenize(self, text: str) -> dict[str, np.ndarray]:
-        params = {"return_tensors": "np"}
-        if isinstance(self.max_inp_len, int):
-            params.update({"max_length": self.max_inp_len, "padding": "max_length", "truncation": True})
-        return dict(self.tokenizer(text, **params))
+        ...
 
     @abstractmethod
     def _generate(self, inputs: dict[str, np.ndarray], max_len: int | None = None) -> list[int]:
+        ...
+
+    @abstractmethod
+    def _decode_tokens(self, tokens: Iterable[int], skip_special_tokens: bool) -> str:
         ...
     
     def translate(self, text: str) -> str:
@@ -59,7 +50,7 @@ class BaseTranslationModel(ABC):
         inputs = self._tokenize(text)
         self._infer_stats["input_size"] = inputs["input_ids"].shape[-1]
         tokens = self._generate(inputs)
-        text = self.tokenizer.decode(tokens, skip_special_tokens=True)
+        text = self._decode_tokens(tokens, skip_special_tokens=True)
         et = time.time()
         self._transcribe_times.append(et - st)
         return text

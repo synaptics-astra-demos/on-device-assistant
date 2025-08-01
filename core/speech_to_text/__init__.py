@@ -3,6 +3,7 @@ import time
 from typing import Any, Callable, Final
 
 import numpy as np
+import soundfile as sf
 
 from silero_vad import VADIterator, load_silero_vad
 from ..utils.audio import AudioManager
@@ -32,6 +33,7 @@ def moonshine_factory(model_size: str, quant_type: str, sampling_rate: int, cpu_
 
 
 class SpeechToTextAgent:
+
     def __init__(
         self, 
         model_size: str,
@@ -122,16 +124,6 @@ class SpeechToTextAgent:
             logger.info("Stopped by user.")
             self.audio_manager.stop_record()
 
-
-if __name__ == "__main__":
-    # Example usage:
-    def handle_results(text, inference_time):
-        if text:
-            print(f"\033[93mSTT: {text} \033[92m({inference_time*1000:.0f}ms)\033[0m")
-
-    pipe = SpeechToTextAgent(
-        model="base",  # Set to "tiny" for faster but less accurate model
-        handler=handle_results
-    )
-
-    pipe.run()
+    def transcribe_wav(self, wav) -> str:
+        data, _ = sf.read(wav, dtype="float32")
+        return self.speech_to_text.transcribe(data)
