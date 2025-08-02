@@ -20,14 +20,17 @@ STT_QUANT_TYPES: Final = ["float", "quantized"]
 logger = logging.getLogger(__name__)
 
 
-def moonshine_factory(model_size: str, quant_type: str, sampling_rate: int, cpu_only: bool = False, n_threads: int | None = None) -> "MoonshineOnnx | MoonshineSynap":
-    from .moonshine import MoonshineOnnx, MoonshineSynap
+def moonshine_factory(
+    model_name: str,
+    sampling_rate: int,
+    n_threads: int | None = None
+) -> "MoonshineOnnx | MoonshineSynap":
+    from .moonshine import MoonshineOnnx, MoonshineSynap, MODEL_CHOICES
 
-    if model_size not in STT_MODEL_SIZES:
-        raise ValueError(f"Invalid model size: {model_size}. Supported sizes are 'tiny' and 'base'.")
-    if quant_type not in STT_QUANT_TYPES:
-        raise ValueError(f"Invalid quantization type: {quant_type}. Supported types are 'float' and 'quantized'.")
-    if cpu_only:
+    if model_name not in MODEL_CHOICES:
+        raise ValueError(f"Invalid model '{model_name}', please use one of {MODEL_CHOICES}")
+    model_type, model_size, quant_type = model_name.split("-")
+    if model_type == "onnx":
         return MoonshineOnnx(model_size=model_size, quant_type=quant_type, rate=sampling_rate, n_threads=n_threads)
     return MoonshineSynap(model_size=model_size, quant_type=quant_type, rate=sampling_rate)
 
@@ -35,18 +38,17 @@ def moonshine_factory(model_size: str, quant_type: str, sampling_rate: int, cpu_
 class SpeechToTextAgent:
 
     def __init__(
-        self, 
-        model_size: str,
-        quant_type: str,
-        handler: Callable[[str], Any], 
-        cpu_only: bool = False, 
-        n_threads: int | None = None, 
+        self,
+        model_name: str,
+        handler: Callable[[str], Any],
+        *,
+        n_threads: int | None = None,
         threshold: float = 0.3,
         min_silence_duration_ms: int = 300,
     ):
         self.handler = handler
 
-        self.speech_to_text = moonshine_factory(model_size, quant_type, SAMPLING_RATE, cpu_only, n_threads)
+        self.speech_to_text = moonshine_factory(model_name, SAMPLING_RATE, n_threads)
         self.vad_model = load_silero_vad(onnx=True)
         self.vad_iterator = VADIterator(
             model=self.vad_model,

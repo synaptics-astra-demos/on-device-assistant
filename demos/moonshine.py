@@ -6,7 +6,7 @@ from core.speech_to_text import SpeechToTextAgent
 from core.speech_to_text.moonshine import MODEL_CHOICES
 
 from ._utils import (
-    add_input_args,
+    add_common_args,
     configure_logging,
     format_answer
 )
@@ -20,11 +20,8 @@ def main():
     def _speech_output_handler(transcribed_text: str):
         print(format_answer(transcribed_text, agent.last_infer_time, agent_name="Transcribed"))
 
-    model_type, model_size, model_quant = args.model.split("-")
-
     agent = SpeechToTextAgent(
-        model_size, model_quant, _speech_output_handler, 
-        cpu_only=model_type=="onnx", 
+        args.model, _speech_output_handler,
         n_threads=args.threads,
         threshold=args.threshold,
         min_silence_duration_ms=args.silence_ms
@@ -39,7 +36,7 @@ def main():
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Q&A AI Assistant")
+    parser = argparse.ArgumentParser(description="Moonshine Demo")
     parser.add_argument(
         "-i", "--inputs",
         type=str,
@@ -67,7 +64,7 @@ if __name__ == "__main__":
         default=DEFAULT_SILENCE_DUR_MS,
         help="Length of silence that determines end of speech (default: %(default)s ms)"
     )
-    add_input_args(parser)
+    add_common_args(parser)
     args = parser.parse_args()
 
     logger = logging.getLogger(__name__)
