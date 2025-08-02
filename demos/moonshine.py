@@ -11,8 +11,6 @@ from ._utils import (
     format_answer
 )
 
-MODEL_SIZES: Final[str] = ["base", "tiny"]
-QUANT_TYPES: Final[str] = ["float", "quantized"]
 DEFAULT_SPEECH_THRESH: Final[float] = 0.5
 DEFAULT_SILENCE_DUR_MS: Final[int] = 300
 
