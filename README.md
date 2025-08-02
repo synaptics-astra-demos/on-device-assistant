@@ -17,6 +17,13 @@ python assistant.py
 
 Run `python assistant.py --help` to view all available options
 
+### Additional Demos
+Model-specific examples are available in the [demos/](demos/) directory:
+```sh
+source .venv/bin/activate
+python -m demos.<model>
+```
+
 ## Profiling
 Profiling scripts are available at [profile/](profile/). Currently supported models:
 
