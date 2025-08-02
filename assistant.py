@@ -6,7 +6,8 @@ from pathlib import Path
 from typing import Final
 
 from core.embeddings import TextEmbeddingsAgent
-from core.speech_to_text import SpeechToTextAgent, STT_MODEL_SIZES, STT_QUANT_TYPES
+from core.speech_to_text import SpeechToTextAgent
+from core.speech_to_text.moonshine import MODEL_CHOICES as STT_CHOICES
 from core.text_to_speech import TextToSpeechAgent
 
 DEFAULT_QA_FILE: Final = "data/qa_assistant.json"
@@ -67,8 +68,7 @@ def main():
 
     text_agent = TextEmbeddingsAgent(args.qa_file, cpu_only=args.cpu_only, cpu_cores=args.threads)
     stt_agent = SpeechToTextAgent(
-        args.stt_size, args.stt_quant, handle_speech_input, 
-        cpu_only=args.cpu_only, 
+        args.stt_model, handle_speech_input,
         n_threads=args.threads,
         threshold=args.threshold,
         min_silence_duration_ms=args.silence_ms
@@ -117,18 +117,11 @@ if __name__ == "__main__":
         help="Length of silence that determines end of speech (default: %(default)s ms)"
     )
     stt_args.add_argument(
-        "--stt-size",
+        "--stt-model",
         type=str,
-        choices=STT_MODEL_SIZES,
-        default="tiny",
-        help="Speech-to-text model size (default: %(default)s)"
-    )
-    stt_args.add_argument(
-        "--stt-quant",
-        type=str,
-        choices=STT_QUANT_TYPES,
-        default="float",
-        help="Speech-to-text model quantization type (default: %(default)s)"
+        choices=STT_CHOICES,
+        default="synap-tiny-float",
+        help="Speech-to-text model (default: %(default)s)"
     )
     args = parser.parse_args()
 

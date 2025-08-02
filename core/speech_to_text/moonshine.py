@@ -11,9 +11,9 @@ from .base import BaseSpeechToTextModel
 from ..inference.runners import OnnxInferenceRunner, SynapInferenceRunner
 
 MODEL_TYPES: Final = ["onnx", "synap"]
-STT_MODEL_SIZES: Final = ["tiny", "base"]
-STT_QUANT_TYPES: Final = ["float", "quantized"]
-MODEL_CHOICES: Final = [f"{t}-{s}-{q}" for (t, s, q) in product(MODEL_TYPES, STT_MODEL_SIZES, STT_QUANT_TYPES)]
+MODEL_SIZES: Final = ["tiny", "base"]
+QUANT_TYPES: Final = ["float", "quantized"]
+MODEL_CHOICES: Final = [f"{t}-{s}-{q}" for (t, s, q) in product(MODEL_TYPES, MODEL_SIZES, QUANT_TYPES)]
 logger = logging.getLogger(__name__)
 
 
