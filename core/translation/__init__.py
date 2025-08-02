@@ -1,5 +1,4 @@
 import logging
-from typing import Literal
 
 logger = logging.getLogger(__name__)
 
@@ -7,21 +6,23 @@ logger = logging.getLogger(__name__)
 def opus_mt_factory(
     source_lang: str,
     dest_lang: str,
-    quant_type: Literal["float", "quantized"],
+    model_type: str,
+    quant_type: str,
+    n_beams: int | None = None,
     n_threads: int | None = None,
-    cpu_only: bool = False,
     use_onnx_encoder: bool = False
 ) -> "OpusMTOnnx | OpusMTSynap":
-    from .opus_mt import OpusMTOnnx, OpusMTSynap, QUANT_TYPES
-
+    from .opus_mt import OpusMTOnnx, OpusMTSynap, MODEL_TYPES, QUANT_TYPES
+    if model_type not in MODEL_TYPES:
+        raise ValueError(f"Invalid model type: {model_type}. Supported types are: {MODEL_TYPES}.")
     if quant_type not in QUANT_TYPES:
         raise ValueError(f"Invalid quantization type: {quant_type}. Supported types are: {QUANT_TYPES}.")
-    if cpu_only:
+    if model_type == "onnx":
         return OpusMTOnnx(
-            source_lang, dest_lang, quant_type, n_threads=n_threads
+            source_lang, dest_lang, quant_type, num_beams=n_beams, n_threads=n_threads
         )
     return OpusMTSynap(
-        source_lang, dest_lang, quant_type, n_threads=n_threads, use_onnx_encoder=use_onnx_encoder
+        source_lang, dest_lang, quant_type, num_beams=n_beams, n_threads=n_threads, use_onnx_encoder=use_onnx_encoder
     )
 
 
@@ -31,12 +32,14 @@ class TextTranslationAgent:
         self,
         source_lang: str,
         dest_lang: str,
-        quant_type: Literal["float", "quantized"],
-        n_threads: int | None = None,
-        cpu_only: bool = False
+        model_type: str,
+        quant_type: str,
+        *,
+        n_beams: int | None = None,
+        n_threads: int | None = None
     ):
         self.translator = opus_mt_factory(
-            source_lang, dest_lang, quant_type, n_threads, cpu_only
+            source_lang, dest_lang, model_type, quant_type, n_beams=n_beams, n_threads=n_threads
         )
 
     @property
