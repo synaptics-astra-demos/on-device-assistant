@@ -57,7 +57,8 @@ def format_answer(
 ) -> str:
     GREEN: Final[str] = "\033[32m"
     RESET: Final[str] = "\033[0m"
-    result: str = GREEN + f"{agent_name}: {answer}" + RESET + f" ({infer_time * 1000:.3f} ms, "
+    result: str = GREEN + f"{agent_name}: {answer}" + RESET + f" ({infer_time * 1000:.3f} ms"
+    stats = stats or []
     for stat in stats:
-        result += str(stat)
+        result += ", " + str(stat)
     return result + ")"
