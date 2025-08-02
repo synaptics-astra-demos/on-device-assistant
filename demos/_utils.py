@@ -14,24 +14,18 @@ class InferenceStat:
         return f"{self.name}: {self.value}{unit}"
 
 
-def add_input_args(parser: argparse.ArgumentParser):
+def add_common_args(parser: argparse.ArgumentParser):
+    parser.add_argument(
+        "-j", "--threads",
+        type=int,
+        help="Number of cores to use for CPU execution (default: all)"
+    )
     parser.add_argument(
         "--logging",
         type=str,
         choices=["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"],
         default="INFO",
         help="Logging verbosity: %(choices)s (default: %(default)s)"
-    )
-    parser.add_argument(
-        "--cpu-only",
-        action="store_true",
-        default=False,
-        help="Use CPU only models"
-    )
-    parser.add_argument(
-        "-j", "--threads",
-        type=int,
-        help="Number of cores to use for CPU execution (default: all)"
     )
 
 

@@ -9,7 +9,7 @@ from core.embeddings import TextEmbeddingsAgent
 
 from ._utils import (
     InferenceStat,
-    add_input_args,
+    add_common_args,
     configure_logging,
     format_answer
 )
@@ -53,14 +53,20 @@ def main():
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Q&A AI Assistant")
+    parser = argparse.ArgumentParser(description="MiniLM Demo")
     parser.add_argument(
         "--qa-file",
         type=str,
         default=DEFAULT_QA_FILE,
         help="Path to Question-Answer pairs (default: %(default)s)"
     )
-    add_input_args(parser)
+    parser.add_argument(
+        "--cpu-only",
+        action="store_true",
+        default=False,
+        help="Use CPU only models"
+    )
+    add_common_args(parser)
     args = parser.parse_args()
 
     logger = logging.getLogger(__name__)
