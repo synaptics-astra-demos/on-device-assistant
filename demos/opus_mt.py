@@ -1,6 +1,5 @@
 import argparse
 import logging
-from typing import Final
 
 from core.translation import TextTranslationAgent
 from core.translation.opus_mt import MODEL_CHOICES
@@ -13,9 +12,8 @@ from ._utils import (
 
 
 def main():
-    model_type, model_quant = args.model.split("-")
     agent = TextTranslationAgent(
-        args.source_lang, args.dest_lang, model_type, model_quant,
+        args.source_lang, args.dest_lang, args.model,
         n_beams=args.num_beams,
         n_threads=args.threads
     )
