@@ -1,26 +1,15 @@
-import json
-import os
 from abc import ABC, abstractmethod
 from collections import deque
-from pathlib import Path
 
 
 class BaseEmbeddingsModel(ABC):
 
     def __init__(
         self,
-        model_name: str,
-        model_path: str | os.PathLike,
         normalize: bool
     ):
-        self.model_name = model_name
-        self.model_path = Path(model_path)
         self.normalize = normalize
-
         self._infer_times = deque(maxlen=100)
-
-    def __repr__(self) -> str:
-        return f"{self.model_name} [{self.model_path}]"
     
     @property
     def last_infer_time(self) -> float | None:
@@ -41,12 +30,3 @@ class BaseEmbeddingsModel(ABC):
     @abstractmethod
     def generate(self, text: str) -> list[float]:
         ...
-
-    @classmethod
-    def from_config(cls, config: dict | str | os.PathLike) -> "BaseEmbeddingsModel":
-        if not isinstance(config, dict):
-            with open(config) as f:
-                model_config = json.load(f)
-        else:
-            model_config = config
-        return cls(**model_config)

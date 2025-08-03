@@ -6,8 +6,9 @@ from pathlib import Path
 from typing import Final
 
 from core.embeddings import TextEmbeddingsAgent
+from core.embeddings.minilm import MODEL_CHOICES as EMB_MODELS
 from core.speech_to_text import SpeechToTextAgent
-from core.speech_to_text.moonshine import MODEL_CHOICES as STT_CHOICES
+from core.speech_to_text.moonshine import MODEL_CHOICES as STT_MODELS
 from core.text_to_speech import TextToSpeechAgent
 
 DEFAULT_QA_FILE: Final = "data/qa_assistant.json"
@@ -55,7 +56,7 @@ def main():
     def handle_speech_input(transcribed_text: str):
 
         print(YELLOW + f"Query: {transcribed_text}" + RESET + f" ({stt_agent.last_infer_time * 1000:.3f} ms)")
-        result = text_agent.answer_query(transcribed_text)[0]
+        result = text_agent.answer_query(transcribed_text)
         answer, similarity, emb_infer_time = result["answer"], result["similarity"], result["infer_time"]
         answer = replace_tool_tokens(answer, tools)
         print(GREEN + f"Agent: {answer}" + RESET + f" ({emb_infer_time * 1000:.3f} ms, Similarity: {similarity:.6f})")
@@ -66,7 +67,7 @@ def main():
     with open(tools_path, "r") as f:
         tools = json.load(f)
 
-    text_agent = TextEmbeddingsAgent(args.qa_file, cpu_only=args.cpu_only, cpu_cores=args.threads)
+    text_agent = TextEmbeddingsAgent(args.emb_model, args.qa_file, n_threads=args.threads)
     stt_agent = SpeechToTextAgent(
         args.stt_model, handle_speech_input,
         n_threads=args.threads,
@@ -80,12 +81,6 @@ def main():
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Q&A AI Assistant")
     parser.add_argument(
-        "--qa-file",
-        type=str,
-        default=DEFAULT_QA_FILE,
-        help="Path to Question-Answer pairs (default: %(default)s)"
-    )
-    parser.add_argument(
         "--logging",
         type=str,
         choices=["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"],
@@ -93,15 +88,23 @@ if __name__ == "__main__":
         help="Logging verbosity: %(choices)s (default: %(default)s)"
     )
     parser.add_argument(
-        "--cpu-only",
-        action="store_true",
-        default=False,
-        help="Use CPU only models"
-    )
-    parser.add_argument(
         "-j", "--threads",
         type=int,
         help="Number of cores to use for CPU execution (default: all)"
+    )
+    emb_args = parser.add_argument_group("embeddings options")
+    emb_args.add_argument(
+        "--qa-file",
+        type=str,
+        default=DEFAULT_QA_FILE,
+        help="Path to Question-Answer pairs (default: %(default)s)"
+    )
+    emb_args.add_argument(
+        "--emb-model",
+        type=str,
+        choices=EMB_MODELS,
+        default="synap-quantized",
+        help="Text embeddings model (default: %(default)s)"
     )
     stt_args = parser.add_argument_group("speech-to-text options")
     stt_args.add_argument(
@@ -119,7 +122,7 @@ if __name__ == "__main__":
     stt_args.add_argument(
         "--stt-model",
         type=str,
-        choices=STT_CHOICES,
+        choices=STT_MODELS,
         default="synap-tiny-float",
         help="Speech-to-text model (default: %(default)s)"
     )
@@ -127,6 +130,6 @@ if __name__ == "__main__":
 
     configure_logging(args.logging)
     logger = logging.getLogger(__name__)
-    logger.info("Starting demo...")
+    logger.info("Initializing assistant...")
 
     main()

@@ -24,8 +24,8 @@ if __name__ == "__main__":
         filename=MODELS_DIR / f"gguf/all-MiniLM-L6-v2-Q8_0.gguf"
     )
     download_from_url(
-        url="https://github.com/spal-synaptics/on-device-assistant/releases/download/models-v1/all-MiniLM-L6-v2.synap",
-        filename=MODELS_DIR / f"synap/all-MiniLM-L6-v2.synap"
+        url="https://github.com/spal-synaptics/on-device-assistant/releases/download/models-v1/all-MiniLM-L6-v2-quantized.synap",
+        filename=MODELS_DIR / f"synap/all-MiniLM-L6-v2/model_quantized.synap"
     )
     # download Moonshine models
     download_from_hf(
