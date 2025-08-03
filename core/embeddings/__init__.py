@@ -18,6 +18,8 @@ logger = logging.getLogger(__name__)
 
 def minilm_factory(
     model_name: str,
+    *,
+    eager_load: bool = True,
     normalize: bool = False,
     n_threads: int | None = None
 ) -> MiniLMLlama | MiniLMSynap:
@@ -27,11 +29,13 @@ def minilm_factory(
     if model_type == "llama":
         return MiniLMLlama(
             quant_type,
+            eager_load=eager_load,
             n_threads=n_threads,
             normalize=normalize
         )
     return MiniLMSynap(
         quant_type,
+        eager_load=eager_load,
         normalize=normalize
     )
 
@@ -42,18 +46,28 @@ class TextEmbeddingsAgent:
         model_name: str,
         qa_file: str, 
         *,
+        eager_load: bool = True,
         normalize: bool = False,
         n_threads: int | None = None,
         cache_root: str | os.PathLike = "./.cache"
     ):
+        logger.info("Initializing %s ...", str(self))
         self.model_name = model_name
         self.qa_file = qa_file
         with open(qa_file, "r") as f:
             self.qa_pairs = json.load(f)
-        self.embedding_model = minilm_factory(model_name, normalize, n_threads)
+        self.embedding_model = minilm_factory(
+            model_name,
+            eager_load=eager_load,
+            normalize=normalize,
+            n_threads=n_threads
+        )
         self.cache_dir = Path(cache_root) / "embeddings"
         self.cache_dir.mkdir(parents=True, exist_ok=True)
         self.qa_embeddings = self.load_embeddings(self.embedding_model)
+
+    def __repr__(self):
+        return f"TextEmbeddingsAgent@{hex(id(self))}"
 
     def load_embeddings(self, model: BaseEmbeddingsModel, *, force_regenerate: bool = False) -> np.ndarray:
         import hashlib
@@ -94,3 +108,7 @@ class TextEmbeddingsAgent:
             "similarity": float(sims[best_idx]),
             "infer_time": self.embedding_model.last_infer_time,
         }
+
+    def cleanup(self):
+        logger.info("Cleaning up %s ...", str(self))
+        self.embedding_model.cleanup()

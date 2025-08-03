@@ -6,9 +6,12 @@ class BaseEmbeddingsModel(ABC):
 
     def __init__(
         self,
-        normalize: bool
+        *,
+        normalize: bool,
+        eager_load: bool
     ):
         self.normalize = normalize
+        self.eager_load = eager_load
         self._infer_times = deque(maxlen=100)
     
     @property
@@ -29,4 +32,8 @@ class BaseEmbeddingsModel(ABC):
     
     @abstractmethod
     def generate(self, text: str) -> list[float]:
+        ...
+
+    @abstractmethod
+    def cleanup(self):
         ...

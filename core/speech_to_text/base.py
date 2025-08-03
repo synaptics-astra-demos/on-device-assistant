@@ -70,6 +70,10 @@ class BaseSpeechToTextModel(ABC):
     def _generate(self, audio: np.ndarray, max_len: int | None = None) -> np.ndarray:
         ...
 
+    @abstractmethod
+    def cleanup(self):
+        ...
+
     def transcribe(self, speech: np.ndarray) -> str:
         self._infer_stats = {}
         st = time.time()

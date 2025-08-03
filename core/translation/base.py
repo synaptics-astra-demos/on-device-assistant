@@ -43,7 +43,11 @@ class BaseTranslationModel(ABC):
     @abstractmethod
     def _decode_tokens(self, tokens: Iterable[int], skip_special_tokens: bool) -> str:
         ...
-    
+
+    @abstractmethod
+    def cleanup(self):
+        ...
+
     def translate(self, text: str) -> str:
         self._infer_stats = {}
         st = time.time()

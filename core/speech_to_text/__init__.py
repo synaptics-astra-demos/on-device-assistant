@@ -22,8 +22,10 @@ logger = logging.getLogger(__name__)
 
 def moonshine_factory(
     model_name: str,
+    *,
     sampling_rate: int,
-    n_threads: int | None = None
+    n_threads: int | None = None,
+    eager_load: bool = True,
 ) -> "MoonshineOnnx | MoonshineSynap":
     from .moonshine import MoonshineOnnx, MoonshineSynap, MODEL_CHOICES
 
@@ -31,8 +33,20 @@ def moonshine_factory(
         raise ValueError(f"Invalid model '{model_name}', please use one of {MODEL_CHOICES}")
     model_type, model_size, quant_type = model_name.split("-")
     if model_type == "onnx":
-        return MoonshineOnnx(model_size=model_size, quant_type=quant_type, rate=sampling_rate, n_threads=n_threads)
-    return MoonshineSynap(model_size=model_size, quant_type=quant_type, rate=sampling_rate, n_threads=n_threads)
+        return MoonshineOnnx(
+            model_size=model_size,
+            quant_type=quant_type,
+            rate=sampling_rate,
+            n_threads=n_threads,
+            eager_load=eager_load
+        )
+    return MoonshineSynap(
+        model_size=model_size,
+        quant_type=quant_type,
+        rate=sampling_rate,
+        n_threads=n_threads,
+        eager_load=eager_load
+    )
 
 
 class SpeechToTextAgent:
@@ -42,13 +56,20 @@ class SpeechToTextAgent:
         model_name: str,
         handler: Callable[[str], Any],
         *,
+        eager_load: bool = True,
         n_threads: int | None = None,
         threshold: float = 0.3,
         min_silence_duration_ms: int = 300,
     ):
+        logger.info("Initializing %s ...", str(self))
         self.handler = handler
 
-        self.speech_to_text = moonshine_factory(model_name, SAMPLING_RATE, n_threads)
+        self.speech_to_text = moonshine_factory(
+            model_name,
+            sampling_rate=SAMPLING_RATE,
+            eager_load=eager_load,
+            n_threads=n_threads
+        )
         self.vad_model = load_silero_vad(onnx=True)
         self.vad_iterator = VADIterator(
             model=self.vad_model,
@@ -62,6 +83,9 @@ class SpeechToTextAgent:
         self.lookback_size = LOOKBACK_CHUNKS * CHUNK_SIZE
         self.speech = np.empty(0, dtype=np.float32)
         self.recording = False
+
+    def __repr__(self):
+        return f"SpeechToTextAgent@{hex(id(self))}"
 
     @property
     def last_infer_time(self) -> float | None:
@@ -123,8 +147,14 @@ class SpeechToTextAgent:
                         start_time = time.time()
 
         except KeyboardInterrupt:
-            logger.info("Stopped by user.")
             self.audio_manager.stop_record()
+            raise
+
+    def cleanup(self):
+        logger.info("Cleaning up %s ...", str(self))
+        self.speech_to_text.cleanup()
+        self.vad_iterator = None
+        self.audio_manager = None
 
     def transcribe_wav(self, wav) -> str:
         data, _ = sf.read(wav, dtype="float32")

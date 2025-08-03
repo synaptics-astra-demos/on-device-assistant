@@ -316,6 +316,11 @@ class OpusMTBase(BaseTranslationModel):
         best = int(final.argmax())
         return seqs[best]
 
+    def cleanup(self):
+        self.encoder.unload()
+        self.decoder.unload()
+        self.decoder_with_past.unload()
+
 
 class OpusMTOnnx(OpusMTBase):
 
@@ -326,25 +331,29 @@ class OpusMTOnnx(OpusMTBase):
         quant_type: Literal["float", "quantized"],
         *,
         num_beams: int | None = None,
-        n_threads: int | None = None
+        n_threads: int | None = None,
+        eager_load: bool = True
     ):
         encoder: OnnxInferenceRunner = OnnxInferenceRunner.from_uri(
             url=f"https://github.com/spal-synaptics/on-device-assistant/releases/download/models-v1/opus-mt-{source_lang}-{dest_lang}-{quant_type}_encoder_model.onnx",
             filename=f"models/Helsinki-NLP/opus-mt-{source_lang}-{dest_lang}/{quant_type}/encoder_model.onnx",
-            n_threads=n_threads
+            n_threads=n_threads,
+            eager_load=eager_load
         )
         decoder: OnnxInferenceRunner = OnnxInferenceRunner.from_uri(
             url=f"https://github.com/spal-synaptics/on-device-assistant/releases/download/models-v1/opus-mt-{source_lang}-{dest_lang}-{quant_type}_decoder_model.onnx",
             filename=f"models/Helsinki-NLP/opus-mt-{source_lang}-{dest_lang}/{quant_type}/decoder_model.onnx",
-            n_threads=n_threads
+            n_threads=n_threads,
+            eager_load=eager_load
         )
         decoder_with_past: OnnxInferenceRunner = OnnxInferenceRunner.from_uri(
             url=f"https://github.com/spal-synaptics/on-device-assistant/releases/download/models-v1/opus-mt-{source_lang}-{dest_lang}-{quant_type}_decoder_with_past_model.onnx",
             filename=f"models/Helsinki-NLP/opus-mt-{source_lang}-{dest_lang}/{quant_type}/decoder_with_past_model.onnx",
-            n_threads=n_threads
+            n_threads=n_threads,
+            eager_load=eager_load
         )
         cache_shapes: dict[str, tuple[int, ...]] = {
-            inp.name: inp.shape for inp in decoder_with_past.model.get_inputs() if "past_key_values" in inp.name
+            inp.name: inp.shape for inp in decoder_with_past.inputs_info if "past_key_values" in inp.name
         }
         super().__init__(
             source_lang,
@@ -367,31 +376,36 @@ class OpusMTSynap(OpusMTBase):
         *,
         num_beams: int | None = None,
         use_onnx_encoder: bool | None = None,
-        n_threads: int | None = None
+        n_threads: int | None = None,
+        eager_load: bool = True
     ):
         encoder: SynapInferenceRunner = SynapInferenceRunner.from_uri(
             url=f"https://github.com/spal-synaptics/on-device-assistant/releases/download/models-v1/opus-mt-{source_lang}-{dest_lang}-{quant_type}_encoder.synap",
-            filename=f"models/synap/opus-mt/{source_lang}-{dest_lang}/{quant_type}/encoder.synap"
+            filename=f"models/synap/opus-mt/{source_lang}-{dest_lang}/{quant_type}/encoder.synap",
+            eager_load=eager_load
         )
         if use_onnx_encoder:
             encoder_onnx: OnnxInferenceRunner = OnnxInferenceRunner.from_uri(
                 url=f"https://github.com/spal-synaptics/on-device-assistant/releases/download/models-v1/opus-mt-{source_lang}-{dest_lang}-{quant_type}_encoder_model.onnx",
                 filename=f"models/Helsinki-NLP/opus-mt-{source_lang}-{dest_lang}/{quant_type}/encoder_model.onnx",
-                n_threads=n_threads
+                n_threads=n_threads,
+                eager_load=eager_load
             )
         decoder: SynapInferenceRunner = SynapInferenceRunner.from_uri(
             url=f"https://github.com/spal-synaptics/on-device-assistant/releases/download/models-v1/opus-mt-{source_lang}-{dest_lang}-{quant_type}_decoder.synap",
-            filename=f"models/synap/opus-mt/{source_lang}-{dest_lang}/{quant_type}/decoder.synap"
+            filename=f"models/synap/opus-mt/{source_lang}-{dest_lang}/{quant_type}/decoder.synap",
+            eager_load=eager_load
         )
         decoder_with_past: SynapInferenceRunner = SynapInferenceRunner.from_uri(
             url=f"https://github.com/spal-synaptics/on-device-assistant/releases/download/models-v1/opus-mt-{source_lang}-{dest_lang}-{quant_type}_decoder_with_past.synap",
-            filename=f"models/synap/opus-mt/{source_lang}-{dest_lang}/{quant_type}/decoder_with_past.synap"
+            filename=f"models/synap/opus-mt/{source_lang}-{dest_lang}/{quant_type}/decoder_with_past.synap",
+            eager_load=eager_load
         )
         cache_shapes: dict[str, tuple[int, ...]] = {
-            inp.name: list(inp.shape) for inp in decoder_with_past.model.inputs if "past_key_values" in inp.name
+            inp.name: inp.shape for inp in decoder_with_past.inputs_info if "past_key_values" in inp.name
         }
-        max_inp_len: int = next(inp.shape for inp in encoder.model.inputs if inp.name == "input_ids")[-1]
-        max_tokens: int = next(inp.shape for inp in decoder_with_past.model.inputs if "decoder" in inp.name)[2] # assuming shape [B, H, L, D]
+        max_inp_len: int = next(inp.shape for inp in encoder.inputs_info if inp.name == "input_ids")[-1]
+        max_tokens: int = next(inp.shape for inp in decoder_with_past.inputs_info if "decoder" in inp.name)[2] # assuming shape [B, H, L, D]
 
         super().__init__(
             source_lang,
@@ -481,7 +495,8 @@ def main():
             args.dest_lang,
             quant_type,
             num_beams=args.num_beams,
-            n_threads=args.threads
+            n_threads=args.threads,
+            eager_load=True
         )
     else:
         translator = OpusMTSynap(
@@ -490,7 +505,8 @@ def main():
             quant_type,
             num_beams=args.num_beams,
             use_onnx_encoder=args.use_onnx_encoder,
-            n_threads=args.threads
+            n_threads=args.threads,
+            eager_load=True
         )
 
     all_results = {

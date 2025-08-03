@@ -67,15 +67,25 @@ def main():
     with open(tools_path, "r") as f:
         tools = json.load(f)
 
-    text_agent = TextEmbeddingsAgent(args.emb_model, args.qa_file, n_threads=args.threads)
+    text_agent = TextEmbeddingsAgent(
+        args.emb_model, args.qa_file,
+        n_threads=args.threads,
+        eager_load=args.eager_load
+    )
     stt_agent = SpeechToTextAgent(
         args.stt_model, handle_speech_input,
         n_threads=args.threads,
         threshold=args.threshold,
-        min_silence_duration_ms=args.silence_ms
+        min_silence_duration_ms=args.silence_ms,
+        eager_load=args.eager_load
     )
     tts_agent = TextToSpeechAgent()
-    stt_agent.run()
+    try:
+        stt_agent.run()
+    except KeyboardInterrupt:
+        text_agent.cleanup()
+        stt_agent.cleanup()
+        logger.info("Stopped by user.")
 
 
 if __name__ == "__main__":
@@ -91,6 +101,12 @@ if __name__ == "__main__":
         "-j", "--threads",
         type=int,
         help="Number of cores to use for CPU execution (default: all)"
+    )
+    parser.add_argument(
+        "--eager-load",
+        action="store_true",
+        default=False,
+        help="Eager load models: increased memory usage but faster first inference time"
     )
     emb_args = parser.add_argument_group("embeddings options")
     emb_args.add_argument(

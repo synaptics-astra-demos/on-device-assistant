@@ -5,11 +5,11 @@ from typing import Final, Literal
 
 import numpy as np
 from llama_cpp import Llama
-from synap import Network
 from tokenizers import Tokenizer, Encoding
 
 from .base import BaseEmbeddingsModel
-from ..utils.download import download_from_hf, download_from_url
+from ..utils.download import download_from_hf
+from ..inference.runners import SynapInferenceRunner
 
 MODEL_TYPES: Final = ["llama", "synap"]
 QUANT_TYPES: Final = ["float", "quantized"]
@@ -24,21 +24,30 @@ class MiniLMLlama(BaseEmbeddingsModel):
         self,
         quant_type: Literal["float", "quantized"],
         *,
+        eager_load: bool = True,
         normalize: bool = False,
         n_threads: int | None = None
     ):
-        super().__init__(normalize)
+        super().__init__(normalize=normalize, eager_load=eager_load)
         model_name = "all-MiniLM-L6-v2-Q8_0.gguf" if quant_type == "quantized" else "all-MiniLM-L6-v2-ggml-model-f16.gguf"
-        model_path = download_from_hf("second-state/All-MiniLM-L6-v2-Embedding-GGUF", model_name)
-        self.model = Llama(
-            model_path=str(model_path),
-            n_threads=n_threads,
-            n_threads_batch=n_threads,
-            embedding=True,
-            verbose=False
-        )
+        self.model_path = download_from_hf("second-state/All-MiniLM-L6-v2-Embedding-GGUF", model_name)
+        self.n_threads = n_threads
+        self.model = None
+        if self.eager_load:
+            self._load_model()
+    
+    def _load_model(self):
+        if self.model is None:
+            self.model = Llama(
+                model_path=str(self.model_path),
+                n_threads=self.n_threads,
+                n_threads_batch=self.n_threads,
+                embedding=True,
+                verbose=False
+            )
 
     def generate(self, text: str) -> list[float]:
+        self._load_model()
         st = time.time()
         embedding = self.model.embed(text, normalize=self.normalize)
         et = time.time()
@@ -47,6 +56,9 @@ class MiniLMLlama(BaseEmbeddingsModel):
             raise ValueError("No embedding returned")
         return embedding
 
+    def cleanup(self):
+        self.model = None
+
 
 class MiniLMSynap(BaseEmbeddingsModel):
 
@@ -54,19 +66,20 @@ class MiniLMSynap(BaseEmbeddingsModel):
         self,
         quant_type: Literal["float", "quantized"],
         *,
+        eager_load: bool = True,
         normalize: bool = False,
         hf_repo: str = "sentence-transformers/all-MiniLM-L6-v2"
     ):
-        super().__init__(normalize)
+        super().__init__(normalize=normalize, eager_load=eager_load)
         model_name = "model_quantized.synap" if quant_type == "quantized" else "model_float.synap"
-        model_path = download_from_url(
+        self.model = SynapInferenceRunner.from_uri(
             f"https://github.com/spal-synaptics/on-device-assistant/releases/download/models-v1/all-MiniLM-L6-v2-{quant_type}.synap",
-            f"models/synap/all-MiniLM-L6-v2/{model_name}"
+            f"models/synap/all-MiniLM-L6-v2/{model_name}",
+            eager_load=eager_load
         )
-        self.model = Network(str(model_path))
         self.tokenizer: Tokenizer = Tokenizer.from_file(download_from_hf(repo_id=hf_repo, filename="tokenizer.json"))
 
-        token_dims = sorted([inp.shape[1] for inp in self.model.inputs])
+        token_dims = sorted([inp.shape[1] for inp in self.model.inputs_info])
         if len(set(token_dims)) > 1:
             logger.warning("Multiple dimensions found for token len, selecting the largest")
         self.token_len = token_dims[-1]
@@ -97,21 +110,22 @@ class MiniLMSynap(BaseEmbeddingsModel):
         }
 
     def generate(self, text: str) -> list[float]:
+        st = time.time()
+
         tokens = self._get_input_tokens(text)
         attn_mask = tokens["attention_mask"]
-
-        for inp in self.model.inputs:
-            inp.assign(tokens[inp.name])
-        st = time.time()
-        model_outputs = self.model.predict()
-        et = time.time()
-        self._infer_times.append(et - st)
-        token_embeddings = model_outputs[0].to_numpy()
+        model_outputs = self.model.infer(tokens)
+        token_embeddings = model_outputs[0]
         embeddings = self.mean_pooling(token_embeddings, attn_mask)
         if self.normalize:
             embeddings = self.normalize_embeds(embeddings)
 
+        et = time.time()
+        self._infer_times.append(et - st)
         return embeddings.squeeze(0).tolist()
+
+    def cleanup(self):
+        self.model.unload()
 
 
 if __name__ == "__main__":

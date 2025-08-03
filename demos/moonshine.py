@@ -27,12 +27,16 @@ def main():
         min_silence_duration_ms=args.silence_ms
     )
 
-    if args.inputs:
-        for wav in args.inputs:
-            transcribed = agent.transcribe_wav(wav)
-            print(format_answer(transcribed, agent.last_infer_time, agent_name="Transcribed"))
-    else:
-        agent.run()
+    try:
+        if args.inputs:
+            for wav in args.inputs:
+                transcribed = agent.transcribe_wav(wav)
+                print(format_answer(transcribed, agent.last_infer_time, agent_name="Transcribed"))
+        else:
+            agent.run()
+    except KeyboardInterrupt:
+        agent.cleanup()
+        logger.info("Stopped by user.")
 
 
 if __name__ == "__main__":

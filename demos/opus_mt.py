@@ -23,7 +23,8 @@ def main():
             text = input("Text: ")
             translated = agent.translate(text)
             print(format_answer(translated, agent.last_infer_time, agent_name="Translated"))
-    except (KeyboardInterrupt, EOFError):
+    except KeyboardInterrupt:
+        agent.cleanup()
         logger.info("Stopped by user.")
 
 
