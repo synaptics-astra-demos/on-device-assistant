@@ -29,10 +29,13 @@ def minilm_factory(
     if model_type == "llama":
         return MiniLMLlama(
             quant_type,
+            eager_load=eager_load,
             n_threads=n_threads,
             normalize=normalize
         )
     return MiniLMSynap(
+        quant_type,
+        eager_load=eager_load,
         quant_type,
         normalize=normalize
     )

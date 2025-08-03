@@ -67,7 +67,11 @@ def main():
     with open(tools_path, "r") as f:
         tools = json.load(f)
 
-    text_agent = TextEmbeddingsAgent(args.emb_model, args.qa_file, n_threads=args.threads)
+    text_agent = TextEmbeddingsAgent(
+        args.emb_model, args.qa_file,
+        n_threads=args.threads,
+        eager_load=args.eager_load
+    )
     stt_agent = SpeechToTextAgent(
         args.stt_model, handle_speech_input,
         n_threads=args.threads,
