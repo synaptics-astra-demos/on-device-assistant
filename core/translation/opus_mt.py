@@ -327,7 +327,7 @@ class OpusMTOnnx(OpusMTBase):
         *,
         num_beams: int | None = None,
         n_threads: int | None = None,
-        eager_load: bool = False
+        eager_load: bool = True
     ):
         encoder: OnnxInferenceRunner = OnnxInferenceRunner.from_uri(
             url=f"https://github.com/spal-synaptics/on-device-assistant/releases/download/models-v1/opus-mt-{source_lang}-{dest_lang}-{quant_type}_encoder_model.onnx",
@@ -372,7 +372,7 @@ class OpusMTSynap(OpusMTBase):
         num_beams: int | None = None,
         use_onnx_encoder: bool | None = None,
         n_threads: int | None = None,
-        eager_load: bool = False
+        eager_load: bool = True
     ):
         encoder: SynapInferenceRunner = SynapInferenceRunner.from_uri(
             url=f"https://github.com/spal-synaptics/on-device-assistant/releases/download/models-v1/opus-mt-{source_lang}-{dest_lang}-{quant_type}_encoder.synap",
@@ -490,8 +490,7 @@ def main():
             args.dest_lang,
             quant_type,
             num_beams=args.num_beams,
-            n_threads=args.threads,
-            eager_load=True
+            n_threads=args.threads
         )
     else:
         translator = OpusMTSynap(
@@ -500,8 +499,7 @@ def main():
             quant_type,
             num_beams=args.num_beams,
             use_onnx_encoder=args.use_onnx_encoder,
-            n_threads=args.threads,
-            eager_load=True
+            n_threads=args.threads
         )
 
     all_results = {

@@ -21,6 +21,9 @@ class IOTensorInfo:
 
 class InferenceRunner(ABC):
 
+    # TODO: destroy() method to free up resources
+    # TODO: context manager for better resource management
+
     def __init__(
         self,
         model_path: str | os.PathLike,
@@ -73,7 +76,7 @@ class OnnxInferenceRunner(InferenceRunner):
         model_path: str | os.PathLike,
         *,
         n_threads: int | None = None,
-        eager_load: bool = False
+        eager_load: bool = True
     ):
         super().__init__(model_path, eager_load=eager_load)
 
@@ -114,7 +117,7 @@ class SynapInferenceRunner(InferenceRunner):
         self,
         model_path: str | os.PathLike,
         *,
-        eager_load: bool = False
+        eager_load: bool = True
     ):
         super().__init__(model_path, eager_load=eager_load)
 

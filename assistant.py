@@ -72,7 +72,8 @@ def main():
         args.stt_model, handle_speech_input,
         n_threads=args.threads,
         threshold=args.threshold,
-        min_silence_duration_ms=args.silence_ms
+        min_silence_duration_ms=args.silence_ms,
+        eager_load=args.eager_load
     )
     tts_agent = TextToSpeechAgent()
     stt_agent.run()
@@ -91,6 +92,12 @@ if __name__ == "__main__":
         "-j", "--threads",
         type=int,
         help="Number of cores to use for CPU execution (default: all)"
+    )
+    parser.add_argument(
+        "--eager-load",
+        action="store_true",
+        default=False,
+        help="Eager load models: increased memory usage but faster first inference time"
     )
     emb_args = parser.add_argument_group("embeddings options")
     emb_args.add_argument(

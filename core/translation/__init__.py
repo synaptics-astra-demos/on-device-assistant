@@ -8,7 +8,7 @@ def opus_mt_factory(
     dest_lang: str,
     model_name: str,
     *,
-    eager_load: bool = False,
+    eager_load: bool = True,
     n_beams: int | None = None,
     n_threads: int | None = None,
     use_onnx_encoder: bool = False
@@ -42,7 +42,7 @@ class TextTranslationAgent:
         dest_lang: str,
         model_name: str,
         *,
-        eager_load: bool = False,
+        eager_load: bool = True,
         n_beams: int | None = None,
         n_threads: int | None = None
     ):

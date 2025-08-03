@@ -25,7 +25,7 @@ def moonshine_factory(
     *,
     sampling_rate: int,
     n_threads: int | None = None,
-    eager_load: bool = False,
+    eager_load: bool = True,
 ) -> "MoonshineOnnx | MoonshineSynap":
     from .moonshine import MoonshineOnnx, MoonshineSynap, MODEL_CHOICES
 
@@ -56,7 +56,7 @@ class SpeechToTextAgent:
         model_name: str,
         handler: Callable[[str], Any],
         *,
-        eager_load: bool = False,
+        eager_load: bool = True,
         n_threads: int | None = None,
         threshold: float = 0.3,
         min_silence_duration_ms: int = 300,

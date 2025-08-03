@@ -28,7 +28,7 @@ class MoonshineSynap(BaseSpeechToTextModel):
         rate: int = 16_000,
         max_tok_per_s: int | None = None,
         n_threads: int | None = None,
-        eager_load: bool = False,
+        eager_load: bool = True,
     ):
         super().__init__(
             hf_repo,
@@ -175,7 +175,7 @@ class MoonshineOnnx(BaseSpeechToTextModel):
         quant_type: Literal["float", "quantized"] = "quantized",
         rate: int = 16_000,
         n_threads: int | None = None,
-        eager_load: bool = False,
+        eager_load: bool = True,
     ):
         super().__init__(
             hf_repo,
