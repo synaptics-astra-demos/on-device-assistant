@@ -21,9 +21,6 @@ class IOTensorInfo:
 
 class InferenceRunner(ABC):
 
-    # TODO: destroy() method to free up resources
-    # TODO: context manager for better resource management
-
     def __init__(
         self,
         model_path: str | os.PathLike,
@@ -33,6 +30,16 @@ class InferenceRunner(ABC):
         self._model_path = str(model_path)
         self._eager_load = eager_load
         self._infer_time_ms: float = 0.0
+
+    @classmethod
+    def from_hf(cls, hf_repo: str, filename: str | os.PathLike, **kwargs):
+        model_path = download_from_hf(hf_repo, filename)
+        return cls(model_path, **kwargs)
+
+    @classmethod
+    def from_uri(cls, url: str, filename: str | os.PathLike, **kwargs):
+        model_path = download_from_url(url, filename)
+        return cls(model_path, **kwargs)
 
     @property
     def infer_time_ms(self) -> float:
@@ -52,21 +59,15 @@ class InferenceRunner(ABC):
     def _infer(self, inputs: dict[str, np.ndarray]) -> list[np.ndarray]:
         ...
 
+    @abstractmethod
+    def unload(self):
+        ...
+
     def infer(self, inputs: dict[str, np.ndarray]) -> list[np.ndarray]:
         st = time_ns()
         results = self._infer(inputs)
         self._infer_time_ms = (time_ns() - st) / 1e6
         return results
-
-    @classmethod
-    def from_hf(cls, hf_repo: str, filename: str | os.PathLike, **kwargs):
-        model_path = download_from_hf(hf_repo, filename)
-        return cls(model_path, **kwargs)
-
-    @classmethod
-    def from_uri(cls, url: str, filename: str | os.PathLike, **kwargs):
-        model_path = download_from_url(url, filename)
-        return cls(model_path, **kwargs)
 
 
 class OnnxInferenceRunner(InferenceRunner):
@@ -110,6 +111,9 @@ class OnnxInferenceRunner(InferenceRunner):
             self._sess = ort.InferenceSession(self._model_path, self._opts, providers=['CPUExecutionProvider'])
         return [np.asarray(o) for o in self._sess.run(None, inputs)]
 
+    def unload(self):
+        self._sess = None
+
 
 class SynapInferenceRunner(InferenceRunner):
 
@@ -149,3 +153,6 @@ class SynapInferenceRunner(InferenceRunner):
             tensor.assign(np.asarray(inputs[tensor.name]).astype(tensor.data_type.np_type()))
         self._net.predict()
         return [o.to_numpy() for o in self._net.outputs]
+
+    def unload(self):
+        self._net = None
