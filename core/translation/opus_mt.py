@@ -316,6 +316,11 @@ class OpusMTBase(BaseTranslationModel):
         best = int(final.argmax())
         return seqs[best]
 
+    def cleanup(self):
+        self.encoder.unload()
+        self.decoder.unload()
+        self.decoder_with_past.unload()
+
 
 class OpusMTOnnx(OpusMTBase):
 
@@ -490,7 +495,8 @@ def main():
             args.dest_lang,
             quant_type,
             num_beams=args.num_beams,
-            n_threads=args.threads
+            n_threads=args.threads,
+            eager_load=True
         )
     else:
         translator = OpusMTSynap(
@@ -499,7 +505,8 @@ def main():
             quant_type,
             num_beams=args.num_beams,
             use_onnx_encoder=args.use_onnx_encoder,
-            n_threads=args.threads
+            n_threads=args.threads,
+            eager_load=True
         )
 
     all_results = {

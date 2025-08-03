@@ -46,6 +46,7 @@ class TextTranslationAgent:
         n_beams: int | None = None,
         n_threads: int | None = None
     ):
+        logger.info("Initializing %s ...", str(self))
         self.translator = opus_mt_factory(
             source_lang, dest_lang, model_name,
             eager_load=eager_load,
@@ -53,9 +54,16 @@ class TextTranslationAgent:
             n_threads=n_threads
         )
 
+    def __repr__(self):
+        return f"TextTranslationAgent@{hex(id(self))}"
+
     @property
     def last_infer_time(self) -> float | None:
         return self.translator.last_infer_time
 
     def translate(self, text: str) -> str:
         return self.translator.translate(text)
+
+    def cleanup(self):
+        logger.info("Cleaning up %s ...", str(self))
+        self.translator.cleanup()

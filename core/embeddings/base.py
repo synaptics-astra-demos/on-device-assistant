@@ -33,3 +33,7 @@ class BaseEmbeddingsModel(ABC):
     @abstractmethod
     def generate(self, text: str) -> list[float]:
         ...
+
+    @abstractmethod
+    def cleanup(self):
+        ...

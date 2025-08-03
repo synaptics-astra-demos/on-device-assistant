@@ -1,6 +1,7 @@
 import argparse
 import json
 import logging
+from pydoc import text
 import subprocess
 from pathlib import Path
 from typing import Final
@@ -51,7 +52,8 @@ def main():
             answer, similarity, emb_infer_time = result["answer"], result["similarity"], result["infer_time"]
             answer = replace_tool_tokens(answer, tools)
             print(format_answer(answer, emb_infer_time, stats=[InferenceStat("Similarity", f"{similarity:.6f}")]))
-    except (KeyboardInterrupt, EOFError):
+    except KeyboardInterrupt:
+        text_agent.cleanup()
         logger.info("Stopped by user.")
 
 

@@ -36,7 +36,6 @@ def minilm_factory(
     return MiniLMSynap(
         quant_type,
         eager_load=eager_load,
-        quant_type,
         normalize=normalize
     )
 
@@ -52,6 +51,7 @@ class TextEmbeddingsAgent:
         n_threads: int | None = None,
         cache_root: str | os.PathLike = "./.cache"
     ):
+        logger.info("Initializing %s ...", str(self))
         self.model_name = model_name
         self.qa_file = qa_file
         with open(qa_file, "r") as f:
@@ -65,6 +65,9 @@ class TextEmbeddingsAgent:
         self.cache_dir = Path(cache_root) / "embeddings"
         self.cache_dir.mkdir(parents=True, exist_ok=True)
         self.qa_embeddings = self.load_embeddings(self.embedding_model)
+
+    def __repr__(self):
+        return f"TextEmbeddingsAgent@{hex(id(self))}"
 
     def load_embeddings(self, model: BaseEmbeddingsModel, *, force_regenerate: bool = False) -> np.ndarray:
         import hashlib
@@ -105,3 +108,7 @@ class TextEmbeddingsAgent:
             "similarity": float(sims[best_idx]),
             "infer_time": self.embedding_model.last_infer_time,
         }
+
+    def cleanup(self):
+        logger.info("Cleaning up %s ...", str(self))
+        self.embedding_model.cleanup()

@@ -72,7 +72,8 @@ class MoonshineSynap(BaseSpeechToTextModel):
         self.dec_cache_tensors = [k for k in self.all_cache_tensors if "encoder" not in k]
         self.decoder_cache: dict[str, np.ndarray] = {}
 
-        self.transcribe(np.zeros(rate, dtype=np.float32))
+        if eager_load: # warm-up only if eager loading since warm-up loads & keeps model in memory
+            self.transcribe(np.zeros(rate, dtype=np.float32))
     
     def _size_input(self, input: np.ndarray) -> np.ndarray:
         input = input.flatten()
@@ -164,6 +165,11 @@ class MoonshineSynap(BaseSpeechToTextModel):
         self._infer_stats["decoder_tokens"] = i
         return np.array([tokens])
 
+    def cleanup(self):
+        self.encoder.unload()
+        self.decoder.unload()
+        self.decoder_with_past.unload()
+
 
 class MoonshineOnnx(BaseSpeechToTextModel):
 
@@ -195,7 +201,8 @@ class MoonshineOnnx(BaseSpeechToTextModel):
             n_threads=n_threads,
             eager_load=eager_load
         )
-        self.transcribe(np.zeros(rate, dtype=np.float32))
+        if eager_load: # warm-up only if eager loading since warm-up loads & keeps model in memory
+            self.transcribe(np.zeros(rate, dtype=np.float32))
 
     def _generate(self, audio: np.ndarray, max_len: int | None = None) -> np.ndarray:
         if max_len is None:
@@ -242,6 +249,10 @@ class MoonshineOnnx(BaseSpeechToTextModel):
         self._infer_stats["decoder_infer_time_ms"] = dec_time
         self._infer_stats["decoder_tokens"] = i
         return gen_tokens
+
+    def cleanup(self):
+        self.encoder_session.unload()
+        self.decoder_session.unload()
 
 
 def main():

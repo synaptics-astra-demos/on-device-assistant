@@ -24,21 +24,30 @@ class MiniLMLlama(BaseEmbeddingsModel):
         self,
         quant_type: Literal["float", "quantized"],
         *,
+        eager_load: bool = True,
         normalize: bool = False,
         n_threads: int | None = None
     ):
-        super().__init__(normalize=normalize, eager_load=True)
+        super().__init__(normalize=normalize, eager_load=eager_load)
         model_name = "all-MiniLM-L6-v2-Q8_0.gguf" if quant_type == "quantized" else "all-MiniLM-L6-v2-ggml-model-f16.gguf"
-        model_path = download_from_hf("second-state/All-MiniLM-L6-v2-Embedding-GGUF", model_name)
-        self.model = Llama(
-            model_path=str(model_path),
-            n_threads=n_threads,
-            n_threads_batch=n_threads,
-            embedding=True,
-            verbose=False
-        )
+        self.model_path = download_from_hf("second-state/All-MiniLM-L6-v2-Embedding-GGUF", model_name)
+        self.n_threads = n_threads
+        self.model = None
+        if self.eager_load:
+            self._load_model()
+    
+    def _load_model(self):
+        if self.model is None:
+            self.model = Llama(
+                model_path=str(self.model_path),
+                n_threads=self.n_threads,
+                n_threads_batch=self.n_threads,
+                embedding=True,
+                verbose=False
+            )
 
     def generate(self, text: str) -> list[float]:
+        self._load_model()
         st = time.time()
         embedding = self.model.embed(text, normalize=self.normalize)
         et = time.time()
@@ -46,6 +55,9 @@ class MiniLMLlama(BaseEmbeddingsModel):
         if embedding is None:
             raise ValueError("No embedding returned")
         return embedding
+
+    def cleanup(self):
+        self.model = None
 
 
 class MiniLMSynap(BaseEmbeddingsModel):
@@ -111,6 +123,9 @@ class MiniLMSynap(BaseEmbeddingsModel):
         et = time.time()
         self._infer_times.append(et - st)
         return embeddings.squeeze(0).tolist()
+
+    def cleanup(self):
+        self.model.unload()
 
 
 if __name__ == "__main__":

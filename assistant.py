@@ -80,7 +80,12 @@ def main():
         eager_load=args.eager_load
     )
     tts_agent = TextToSpeechAgent()
-    stt_agent.run()
+    try:
+        stt_agent.run()
+    except KeyboardInterrupt:
+        text_agent.cleanup()
+        stt_agent.cleanup()
+        logger.info("Stopped by user.")
 
 
 if __name__ == "__main__":
