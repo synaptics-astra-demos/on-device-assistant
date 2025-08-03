@@ -18,6 +18,8 @@ logger = logging.getLogger(__name__)
 
 def minilm_factory(
     model_name: str,
+    *,
+    eager_load: bool = True,
     normalize: bool = False,
     n_threads: int | None = None
 ) -> MiniLMLlama | MiniLMSynap:
@@ -42,6 +44,7 @@ class TextEmbeddingsAgent:
         model_name: str,
         qa_file: str, 
         *,
+        eager_load: bool = True,
         normalize: bool = False,
         n_threads: int | None = None,
         cache_root: str | os.PathLike = "./.cache"
@@ -50,7 +53,12 @@ class TextEmbeddingsAgent:
         self.qa_file = qa_file
         with open(qa_file, "r") as f:
             self.qa_pairs = json.load(f)
-        self.embedding_model = minilm_factory(model_name, normalize, n_threads)
+        self.embedding_model = minilm_factory(
+            model_name,
+            eager_load=eager_load,
+            normalize=normalize,
+            n_threads=n_threads
+        )
         self.cache_dir = Path(cache_root) / "embeddings"
         self.cache_dir.mkdir(parents=True, exist_ok=True)
         self.qa_embeddings = self.load_embeddings(self.embedding_model)
