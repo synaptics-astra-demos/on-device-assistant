@@ -1,15 +1,10 @@
 import argparse
 import logging
-from pathlib import Path
 
 from typing import Final
 
-from core.embeddings.minilm import MiniLMLlama, MiniLMSynap
+from core.embeddings.minilm import MiniLMLlama, MiniLMSynap, MODEL_CHOICES
 
-DEFAULT_MODELS: Final = [
-    Path("models/gguf/all-MiniLM-L6-v2-Q8_0.gguf"),
-    Path("models/synap/all-MiniLM-L6-v2.synap")
-]
 SAMPLE_INPUT: Final = "Although recent advancements in artificial intelligence have significantly improved natural language understanding, challenges remain in ensuring models grasp contextual nuance, especially when processing complex, multi-clause sentences like this one."
 
 
@@ -28,34 +23,15 @@ def configure_logging(verbosity: str):
     root_logger.addHandler(handler)
 
 
-def get_model(model_path: str | Path) -> MiniLMLlama | MiniLMSynap:
-    model_path = Path(model_path).resolve()
-    if model_path.suffix == ".gguf":
-        model = MiniLMLlama(
-            model_name="Llama",
-            model_path=str(model_path), 
-            n_threads=args.threads
-        )
-    elif model_path.suffix == ".synap":
-        if not args.hf_repo:
-            raise ValueError("Hugging Face model ID required for SyNAP model tokenizer")
-        model = MiniLMSynap(
-            model_name="SyNAP",
-            model_path=str(model_path),
-            hf_model=args.hf_repo
-        )
-    else:
-        raise ValueError(f"Invalid model format {model_path.suffix}, must be one of ('.gguf', '.synap')")
-    return model
-
-
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "-m", "--models",
         type=str,
+        metavar="MODEL",
         nargs="+",
-        default=DEFAULT_MODELS,
+        choices=MODEL_CHOICES,
+        default=["synap-quantized"],
         help="Path to SyNAP or GGUF model"
     )
     parser.add_argument(
@@ -100,11 +76,20 @@ if __name__ == "__main__":
     logger = logging.getLogger(__name__)
     logger.info("Starting profiling...")
 
-    models: dict[str, MiniLMLlama | MiniLMSynap] = {
-        model_path: get_model(model_path) for model_path in args.models
-    }
+    models: dict[str, MiniLMLlama | MiniLMSynap] = {}
+    for model_name in args.models:
+        model_type, model_quant = model_name.split("-")
+        if model_type == "llama":
+            models[model_name] = MiniLMLlama(
+                model_quant,
+                n_threads=args.threads
+            )
+        else:
+            models[model_name] = MiniLMSynap(
+                model_quant
+            )
     infer_times: dict[str, dict] = {
-        model_path: {"n_iters": 0, "total_infer_time": 0} for model_path in args.models
+        model_name: {"n_iters": 0, "total_infer_time": 0} for model_name in models
     }
 
     while True:

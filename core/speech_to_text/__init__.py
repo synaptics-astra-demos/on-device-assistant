@@ -32,7 +32,7 @@ def moonshine_factory(
     model_type, model_size, quant_type = model_name.split("-")
     if model_type == "onnx":
         return MoonshineOnnx(model_size=model_size, quant_type=quant_type, rate=sampling_rate, n_threads=n_threads)
-    return MoonshineSynap(model_size=model_size, quant_type=quant_type, rate=sampling_rate)
+    return MoonshineSynap(model_size=model_size, quant_type=quant_type, rate=sampling_rate, n_threads=n_threads)
 
 
 class SpeechToTextAgent:

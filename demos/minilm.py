@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import Final
 
 from core.embeddings import TextEmbeddingsAgent
+from core.embeddings.minilm import MODEL_CHOICES
 
 from ._utils import (
     InferenceStat,
@@ -39,12 +40,14 @@ def main():
     with open(tools_path, "r") as f:
         tools = json.load(f)
 
-    text_agent = TextEmbeddingsAgent(args.qa_file, cpu_only=args.cpu_only, cpu_cores=args.threads)
+    text_agent = TextEmbeddingsAgent(args.model, args.qa_file, normalize=args.normalize, n_threads=args.threads)
 
     try:
         while True:
             query = input("Query: ")
-            result = text_agent.answer_query(query)[0]
+            if query.lower() in ("exit", "quit"):
+                break
+            result = text_agent.answer_query(query)
             answer, similarity, emb_infer_time = result["answer"], result["similarity"], result["infer_time"]
             answer = replace_tool_tokens(answer, tools)
             print(format_answer(answer, emb_infer_time, stats=[InferenceStat("Similarity", f"{similarity:.6f}")]))
@@ -61,10 +64,18 @@ if __name__ == "__main__":
         help="Path to Question-Answer pairs (default: %(default)s)"
     )
     parser.add_argument(
-        "--cpu-only",
+        "-m", "--model",
+        type=str,
+        metavar="MODEL",
+        choices=MODEL_CHOICES,
+        default="synap-quantized",
+        help="Moonshine model to use (default: %(default)s), available:\n%(choices)s"
+    )
+    parser.add_argument(
+        "--normalize",
         action="store_true",
         default=False,
-        help="Use CPU only models"
+        help="Normalize embeddings output"
     )
     add_common_args(parser)
     args = parser.parse_args()
