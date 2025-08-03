@@ -31,7 +31,7 @@ Profiling scripts are available at [profile/](profile/). Currently supported mod
 | ----- | ------ | ----------------- |
 | MiniLM | [profile/minilm.py](profile/minilm.py) | `.synap` (SyNAP), `.gguf` (llama.cpp) |
 | Moonshine | [profile/moonshine.py](profile/moonshine.py) | `.synap` (SyNAP), `.onnx` (ORT) |
-| Opus-MT | [profile/opus_mt.py](profile/opus_mt.py) | `.synap` (SyNAP)[^1] |
+| Opus-MT | [profile/opus_mt.py](profile/opus_mt.py) | `.synap` (SyNAP) [^1] |
 
 Run profiling with:
 ```sh
@@ -47,4 +47,4 @@ python -m profile.<model>
 > [!TIP]
 > Use in conjunction with the [Astra resource usage visualizer](https://github.com/spal-synaptics/astra-visualizer) to get a live dashboard of CPU and NPU usage during inference
 
-[^1]: See [Astra Opus-MT models] (https://huggingface.co/collections/Synaptics/astra-sl-translation-models-683cb9bdb74ebbceba6cc55c) on HuggingFace for ONNX inference
+[^1]: See [Astra Opus-MT models](https://huggingface.co/collections/Synaptics/astra-sl-translation-models-683cb9bdb74ebbceba6cc55c) on HuggingFace for ONNX inference
