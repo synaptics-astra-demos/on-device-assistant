@@ -7,6 +7,8 @@ def opus_mt_factory(
     source_lang: str,
     dest_lang: str,
     model_name: str,
+    *,
+    eager_load: bool = False,
     n_beams: int | None = None,
     n_threads: int | None = None,
     use_onnx_encoder: bool = False
@@ -18,10 +20,17 @@ def opus_mt_factory(
     model_type, quant_type = model_name.split("-")
     if model_type == "onnx":
         return OpusMTOnnx(
-            source_lang, dest_lang, quant_type, num_beams=n_beams, n_threads=n_threads
+            source_lang, dest_lang, quant_type,
+            num_beams=n_beams,
+            n_threads=n_threads,
+            eager_load=eager_load
         )
     return OpusMTSynap(
-        source_lang, dest_lang, quant_type, num_beams=n_beams, n_threads=n_threads, use_onnx_encoder=use_onnx_encoder
+        source_lang, dest_lang, quant_type,
+        num_beams=n_beams,
+        n_threads=n_threads,
+        use_onnx_encoder=use_onnx_encoder,
+        eager_load=eager_load
     )
 
 
@@ -33,11 +42,15 @@ class TextTranslationAgent:
         dest_lang: str,
         model_name: str,
         *,
+        eager_load: bool = False,
         n_beams: int | None = None,
         n_threads: int | None = None
     ):
         self.translator = opus_mt_factory(
-            source_lang, dest_lang, model_name, n_beams=n_beams, n_threads=n_threads
+            source_lang, dest_lang, model_name,
+            eager_load=eager_load,
+            n_beams=n_beams,
+            n_threads=n_threads
         )
 
     @property

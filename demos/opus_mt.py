@@ -15,7 +15,8 @@ def main():
     agent = TextTranslationAgent(
         args.source_lang, args.dest_lang, args.model,
         n_beams=args.num_beams,
-        n_threads=args.threads
+        n_threads=args.threads,
+        eager_load=True
     )
 
     try:

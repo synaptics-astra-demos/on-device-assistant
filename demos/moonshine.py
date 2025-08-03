@@ -24,7 +24,8 @@ def main():
         args.model, _speech_output_handler,
         n_threads=args.threads,
         threshold=args.threshold,
-        min_silence_duration_ms=args.silence_ms
+        min_silence_duration_ms=args.silence_ms,
+        eager_load=True
     )
 
     if args.inputs:

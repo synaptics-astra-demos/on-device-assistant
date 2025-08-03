@@ -18,6 +18,7 @@ logger = logging.getLogger(__name__)
 
 
 class MoonshineSynap(BaseSpeechToTextModel):
+
     def __init__(
         self,
         *,
@@ -26,7 +27,8 @@ class MoonshineSynap(BaseSpeechToTextModel):
         quant_type: Literal["float", "quantized"] = "float",
         rate: int = 16_000,
         max_tok_per_s: int | None = None,
-        n_threads: int | None = None
+        n_threads: int | None = None,
+        eager_load: bool = False,
     ):
         super().__init__(
             hf_repo,
@@ -37,32 +39,36 @@ class MoonshineSynap(BaseSpeechToTextModel):
         self.encoder_onnx = OnnxInferenceRunner.from_hf(
             hf_repo=hf_repo,
             filename=f"onnx/merged/{model_size}/float/encoder_model.onnx",
-            n_threads=n_threads
+            n_threads=n_threads,
+            eager_load=eager_load
         )
         self.encoder = SynapInferenceRunner.from_uri(
             url=f"https://github.com/spal-synaptics/on-device-assistant/releases/download/models-v1/moonshine_{model_size}_{self.quant_type}_encoder.synap",
-            filename=f"models/synap/moonshine/{model_size}/{self.quant_type}/encoder.synap"
+            filename=f"models/synap/moonshine/{model_size}/{self.quant_type}/encoder.synap",
+            eager_load=eager_load
         )
         self.decoder = SynapInferenceRunner.from_uri(
             url=f"https://github.com/spal-synaptics/on-device-assistant/releases/download/models-v1/moonshine_{model_size}_{self.quant_type}_decoder.synap",
-            filename=f"models/synap/moonshine/{model_size}/{self.quant_type}/decoder.synap"
+            filename=f"models/synap/moonshine/{model_size}/{self.quant_type}/decoder.synap",
+            eager_load=eager_load
         )
         self.decoder_with_past = SynapInferenceRunner.from_uri(
             url=f"https://github.com/spal-synaptics/on-device-assistant/releases/download/models-v1/moonshine_{model_size}_{self.quant_type}_decoder_with_past.synap",
-            filename=f"models/synap/moonshine/{model_size}/{self.quant_type}/decoder_with_past.synap"
+            filename=f"models/synap/moonshine/{model_size}/{self.quant_type}/decoder_with_past.synap",
+            eager_load=eager_load
         )
         self.encoder_pad_id: int = 0
         self.max_tok_per_s = max_tok_per_s
-        self.cache_shapes: dict[str, list[int]] = {o.name: list(o.shape) for o in self.decoder_with_past.model.inputs}
-        self.max_inp_len: int = next(inp.shape for inp in self.encoder.model.inputs if inp.name == "input_values")[-1]
-        self.max_tokens: int = next(inp.shape for inp in self.decoder_with_past.model.inputs if "decoder" in inp.name)[2] # assuming shape [B, H, L, D]
+        self.cache_shapes: dict[str, list[int]] = {i.name: i.shape for i in self.decoder_with_past.inputs_info}
+        self.max_inp_len: int = next(inp.shape for inp in self.encoder.inputs_info if inp.name == "input_values")[-1]
+        self.max_tokens: int = next(inp.shape for inp in self.decoder_with_past.inputs_info if "decoder" in inp.name)[2] # assuming shape [B, H, L, D]
         if isinstance(max_tok_per_s, int) and max_tok_per_s > 0:
             user_max_tokens: int = int(self.max_inp_len / 16_000) * max_tok_per_s
             if user_max_tokens > self.max_tokens:
                 raise ValueError(f"Provided max tokens/sec ({max_tok_per_s}) is too high for model (max: {int(self.max_tokens / self.max_inp_len * 16_000)} tokens/sec)")
             self.max_tokens = user_max_tokens
 
-        self.all_cache_tensors = [inp.name for inp in self.decoder_with_past.model.inputs if "past_key_values" in inp.name]
+        self.all_cache_tensors = [inp.name for inp in self.decoder_with_past.inputs_info if "past_key_values" in inp.name]
         self.dec_cache_tensors = [k for k in self.all_cache_tensors if "encoder" not in k]
         self.decoder_cache: dict[str, np.ndarray] = {}
 
@@ -168,7 +174,8 @@ class MoonshineOnnx(BaseSpeechToTextModel):
         model_size: Literal["base", "tiny"] = "base",
         quant_type: Literal["float", "quantized"] = "quantized",
         rate: int = 16_000,
-        n_threads: int | None = None
+        n_threads: int | None = None,
+        eager_load: bool = False,
     ):
         super().__init__(
             hf_repo,
@@ -179,12 +186,14 @@ class MoonshineOnnx(BaseSpeechToTextModel):
         self.encoder_session = OnnxInferenceRunner.from_hf(
             hf_repo=hf_repo,
             filename=f"onnx/merged/{model_size}/{self.quant_type}/encoder_model.onnx",
-            n_threads=n_threads
+            n_threads=n_threads,
+            eager_load=eager_load
         )
         self.decoder_session = OnnxInferenceRunner.from_hf(
             hf_repo=hf_repo,
             filename=f"onnx/merged/{model_size}/{self.quant_type}/decoder_model_merged.onnx",
-            n_threads=n_threads
+            n_threads=n_threads,
+            eager_load=eager_load
         )
         self.transcribe(np.zeros(rate, dtype=np.float32))
 
@@ -283,12 +292,12 @@ def main():
     if model_type == "onnx":
         print("Loading Moonshine model using ONNX runtime ...")
         stt = MoonshineOnnx(
-            model_size=model_size, quant_type=model_quant, n_threads=args.threads
+            model_size=model_size, quant_type=model_quant, n_threads=args.threads, eager_load=True
         )
     elif model_type == "synap":
         print("Loading Moonshine model using SyNAP runtime ...")
         stt = MoonshineSynap(
-            model_size=model_size, quant_type=model_quant
+            model_size=model_size, quant_type=model_quant, n_threads=args.threads, eager_load=True
         )
     else:
         raise ValueError(f"Unknown model type: {model_type}, supported types are {MODEL_TYPES}")
