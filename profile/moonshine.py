@@ -84,7 +84,7 @@ if __name__ == "__main__":
             )
         elif model_type == "synap":
             models[model_name] = MoonshineSynap(
-                model_size=model_size, quant_type=model_quant
+                model_size=model_size, quant_type=model_quant, n_threads=args.threads
             )
             if not isinstance(max_inp_len, int) or models[model_name].max_inp_len < max_inp_len:
                 max_inp_len = models[model_name].max_inp_len

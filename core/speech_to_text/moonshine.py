@@ -25,7 +25,8 @@ class MoonshineSynap(BaseSpeechToTextModel):
         model_size: Literal["base", "tiny"] = "tiny",
         quant_type: Literal["float", "quantized"] = "float",
         rate: int = 16_000,
-        max_tok_per_s: int | None = None
+        max_tok_per_s: int | None = None,
+        n_threads: int | None = None
     ):
         super().__init__(
             hf_repo,
@@ -36,6 +37,7 @@ class MoonshineSynap(BaseSpeechToTextModel):
         self.encoder_onnx = OnnxInferenceRunner.from_hf(
             hf_repo=hf_repo,
             filename=f"onnx/merged/{model_size}/float/encoder_model.onnx",
+            n_threads=n_threads
         )
         self.encoder = SynapInferenceRunner.from_uri(
             url=f"https://github.com/spal-synaptics/on-device-assistant/releases/download/models-v1/moonshine_{model_size}_{self.quant_type}_encoder.synap",
