@@ -15,8 +15,8 @@ class BaseEmbeddingsModel(ABC):
         self._infer_times = deque(maxlen=100)
     
     @property
-    def last_infer_time(self) -> float | None:
-        return self._infer_times[-1] if self._infer_times else None
+    def last_infer_time(self) -> float:
+        return self._infer_times[-1] if self._infer_times else 0
     
     @property
     def n_infer(self) -> int:
@@ -28,7 +28,7 @@ class BaseEmbeddingsModel(ABC):
     
     @property
     def avg_infer_time(self) -> float | None:
-        return (self.total_infer_time / self.n_infer) if self._infer_times else None
+        return (self.total_infer_time / self.n_infer) if self._infer_times else 0
     
     @abstractmethod
     def generate(self, text: str) -> list[float]:

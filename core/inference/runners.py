@@ -1,4 +1,5 @@
 import os
+import logging
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from time import time_ns
@@ -9,6 +10,8 @@ import onnxruntime as ort
 from synap import Network
 
 from ..utils.download import download_from_hf, download_from_url
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass(frozen=True)
@@ -112,6 +115,7 @@ class OnnxInferenceRunner(InferenceRunner):
 
     def unload(self):
         self._sess = None
+        logger.info("OnnxInferenceRunner@%d: ORT session set to None", id(self))
 
 
 class SynapInferenceRunner(InferenceRunner):
@@ -155,3 +159,4 @@ class SynapInferenceRunner(InferenceRunner):
 
     def unload(self):
         self._net = None
+        logger.debug("SynapInferenceRunner@%d: SyNAP Network set to None", id(self))
