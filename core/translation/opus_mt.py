@@ -78,9 +78,9 @@ class OpusMTTokenizer:
         if n_tokens > max_length:
             tokens = tokens[:max_length]
             tokens[-1] = self._eos_token
-            self._inp_trunc = max_length - n_tokens
+            self._inp_trunc = n_tokens - max_length
         else:
-            diff = max_length - len(tokens)
+            diff = max_length - n_tokens
             tokens = tokens + [self._pad_token] * diff
             self._inp_pad = diff
         return np.asarray(tokens, dtype=np.int64)
@@ -253,7 +253,6 @@ class OpusMTBase(BaseTranslationModel):
         self._infer_stats["decoder_tokens"] = 0
         if isinstance(max_tokens, int) and max_tokens < self.max_tokens:
             self.max_tokens = max_tokens
-
         if (trunc_len := self.tokenizer.input_truncation_len) > 0:
             logger.warning("%s: Truncating input from %d to %d tokens", self.__class__.__name__, self.max_inp_len + trunc_len, self.max_inp_len)
         elif (pad_len := self.tokenizer.input_padding_len) > 0:
