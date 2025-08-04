@@ -40,7 +40,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "-d", "--dest-lang",
         type=str,
-        default="fr",
+        default="zh",
         help="Destination language code (default: %(default)s)"
     )
     parser.add_argument(

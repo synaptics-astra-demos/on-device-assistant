@@ -5,7 +5,7 @@ from typing import Final
 from ._utils import ProfilerBase, ProfilingStat, add_common_args, configure_logging
 from core.translation.opus_mt import OpusMTSynap, MODEL_CHOICES
 
-SAMPLE_INPUT: Final = "Although recent advancements in artificial intelligence have significantly improved natural language understanding, challenges remain in ensuring models grasp contextual nuance, especially when processing complex, multi-clause sentences like this one."
+SAMPLE_INPUT: Final = "This is a simple sentence."
 
 
 class OpusMTProfiler(ProfilerBase):
@@ -32,7 +32,7 @@ class OpusMTProfiler(ProfilerBase):
         for model_name in self._model_names:
             _, model_quant = model_name.split("-")
             self._models[model_name] = OpusMTSynap(
-                "en", "fr", model_quant, num_beams=n_beams, n_threads=n_threads
+                "en", "zh", model_quant, num_beams=n_beams, n_threads=n_threads
             )
             if not isinstance(max_inp_len, int) or self._models[model_name].max_inp_len < max_inp_len:
                 max_inp_len = self._models[model_name].max_inp_len
