@@ -33,8 +33,11 @@ class MiniLMLlama(BaseEmbeddingsModel):
         self.model_path = download_from_hf("second-state/All-MiniLM-L6-v2-Embedding-GGUF", model_name)
         self.n_threads = n_threads
         self.model = None
+
         if self.eager_load:
             self._load_model()
+        else:
+            logger.warning("%s: Eager loading disabled, initial inference will be slower", self.__class__.__name__)
     
     def _load_model(self):
         if self.model is None:
@@ -85,6 +88,9 @@ class MiniLMSynap(BaseEmbeddingsModel):
         self.token_len = token_dims[-1]
         self.tokenizer.enable_truncation(self.token_len)
         self.tokenizer.enable_padding(length=self.token_len)
+
+        if not self.eager_load:
+            logger.warning("%s: Eager loading disabled, initial inference will be slower", self.__class__.__name__)
 
     @staticmethod
     def mean_pooling(

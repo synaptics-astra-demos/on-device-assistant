@@ -104,6 +104,8 @@ class ProfilerBase(ABC):
 
     def print_stats(self):
         SPACER = " " * 4
+        YELLOW = "\033[93m"
+        RESET = "\033[0m"
         print("\n\nProfiling report")
         print("------------------------------------")
         print("Environment:")
@@ -113,7 +115,8 @@ class ProfilerBase(ABC):
             print(f"\nStats for '{model_name}':")
             for stat_name, stat in infer_stats.items():
                 if isinstance(stat, dict) and stat_name == "avg_sys_usage":
-                    print(SPACER + "Average system usage:")
+                    print(SPACER + "System usage:")
+                    print(2 * SPACER + YELLOW + "NOTE: Measurements are affected by other running processes" + RESET)
                     for sys_stat in stat.values():
                         print(2 * SPACER + str(sys_stat))
                 else:

@@ -29,7 +29,7 @@ def add_common_args(parser: argparse.ArgumentParser):
     )
 
 
-def configure_logging(logger: logging.Logger, verbosity: str):
+def configure_logging(verbosity: str):
     level = getattr(logging, verbosity.upper(), None)
     if not isinstance(level, int):
         raise ValueError(f"Invalid log level: {verbosity}")
@@ -38,9 +38,10 @@ def configure_logging(logger: logging.Logger, verbosity: str):
     formatter = logging.Formatter("%(levelname)s: %(message)s")
     handler.setFormatter(formatter)
 
-    logger.setLevel(level)
-    logger.handlers.clear()
-    logger.addHandler(handler)
+    root_logger = logging.getLogger()
+    root_logger.setLevel(level)
+    root_logger.handlers.clear()
+    root_logger.addHandler(handler)
 
 
 def format_answer(

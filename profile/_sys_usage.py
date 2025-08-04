@@ -125,7 +125,7 @@ class SystemProfiler:
     ):
         self._interval_s = interval_ms / 1000
         self._hist_length = hist_length
-        
+
         self._collector = StatsCollector()
         self._total_mem = self._collector.mem_total_kb
         self._cpu_hist: dict[str, Deque[float]] = {
@@ -139,7 +139,25 @@ class SystemProfiler:
         self._prev_stats: StatsSnapshot | None = None
         self._lock: threading.Lock = threading.Lock()
         self._stop_evt: threading.Event = threading.Event()
-        self._threads: list[threading.Thread] = []  
+        self._threads: list[threading.Thread] = []
+
+    @property
+    def curr_cpu_usage(self) -> dict[str, float]:
+        with self._lock:
+            return {
+                cpu_name: hist[-1] if hist else 0.0
+                for cpu_name, hist in self._cpu_hist.items()
+            }
+
+    @property
+    def curr_npu_usage(self) -> float:
+        with self._lock:
+            return self._npu_hist[-1] if self._npu_hist else 0.0
+
+    @property
+    def curr_mem_usage(self) -> float:
+        with self._lock:
+            return self._mem_hist[-1] if self._mem_hist else 0.0
 
     def avg_cpu_usage(self) -> dict[str, float]:
         with self._lock:

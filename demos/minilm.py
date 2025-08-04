@@ -71,7 +71,7 @@ if __name__ == "__main__":
         metavar="MODEL",
         choices=MODEL_CHOICES,
         default="synap-quantized",
-        help="Moonshine model to use (default: %(default)s), available:\n%(choices)s"
+        help="MiniLM model to use (default: %(default)s), available:\n%(choices)s"
     )
     parser.add_argument(
         "--normalize",
@@ -82,8 +82,8 @@ if __name__ == "__main__":
     add_common_args(parser)
     args = parser.parse_args()
 
+    configure_logging(args.logging)
     logger = logging.getLogger(__name__)
-    configure_logging(logger, args.logging)
     logger.info("Starting demo...")
 
     main()

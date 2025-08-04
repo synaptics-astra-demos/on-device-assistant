@@ -40,16 +40,16 @@ if __name__ == "__main__":
     parser.add_argument(
         "-d", "--dest-lang",
         type=str,
-        default="fr",
+        default="zh",
         help="Destination language code (default: %(default)s)"
     )
     parser.add_argument(
         "-m", "--model",
         type=str,
         metavar="MODEL",
-        choices=MODEL_CHOICES,
+        choices=[m for m in MODEL_CHOICES if "synap" in m],
         default="synap-quantized",
-        help="Model type to use for inference (available:\n%(choices)s)"
+        help="Opus-MT model to use (default: %(default)s, available:\n%(choices)s)"
     )
     parser.add_argument(
         "-b", "--num-beams",
@@ -59,8 +59,8 @@ if __name__ == "__main__":
     add_common_args(parser)
     args = parser.parse_args()
 
+    configure_logging(args.logging)
     logger = logging.getLogger(__name__)
-    configure_logging(logger, args.logging)
     logger.info("Starting demo...")
 
     main()
