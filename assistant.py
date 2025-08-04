@@ -2,6 +2,7 @@ import argparse
 import json
 import logging
 import subprocess
+import threading
 from pathlib import Path
 from typing import Final
 
@@ -9,6 +10,8 @@ from core.embeddings import TextEmbeddingsAgent
 from core.embeddings.minilm import MODEL_CHOICES as EMB_MODELS
 from core.speech_to_text import SpeechToTextAgent
 from core.speech_to_text.moonshine import MODEL_CHOICES as STT_MODELS
+from core.translation import TextTranslationAgent
+from core.translation.opus_mt import MODEL_CHOICES as TT_MODELS
 from core.text_to_speech import TextToSpeechAgent
 
 DEFAULT_QA_FILE: Final = "data/qa_assistant.json"
@@ -53,6 +56,14 @@ def main():
     GREEN: Final = "\033[32m"
     RESET: Final = "\033[0m"
 
+    def translate_output(answer: str):
+
+        def _translate():
+            translated = tt_agent.translate(answer)
+            print(GREEN + f"Agent: {translated}" + RESET + f" ({tt_agent.last_infer_time * 1000:.3f} ms)")
+
+        threading.Thread(target=_translate).start()
+
     def handle_speech_input(transcribed_text: str):
 
         print(YELLOW + f"Query: {transcribed_text}" + RESET + f" ({stt_agent.last_infer_time * 1000:.3f} ms)")
@@ -60,6 +71,7 @@ def main():
         answer, similarity, emb_infer_time = result["answer"], result["similarity"], result["infer_time"]
         answer = replace_tool_tokens(answer, tools)
         print(GREEN + f"Agent: {answer}" + RESET + f" ({emb_infer_time * 1000:.3f} ms, Similarity: {similarity:.6f})")
+        translate_output(answer)
         wav_path = tts_agent.synthesize(answer)
         stt_agent.audio_manager.play(wav_path)
 
@@ -79,12 +91,21 @@ def main():
         min_silence_duration_ms=args.silence_ms,
         eager_load=args.eager_load
     )
+    tt_agent = TextTranslationAgent(
+        "en", args.tt_lang, args.tt_model,
+        n_threads=args.threads,
+        n_beams=args.num_beams,
+        eager_load=args.eager_load
+    )
     tts_agent = TextToSpeechAgent()
     try:
+        if not args.eager_load:
+            logger.warning("Eager loading disabled: initial inference will be slower")
         stt_agent.run()
     except KeyboardInterrupt:
         text_agent.cleanup()
         stt_agent.cleanup()
+        tt_agent.cleanup()
         logger.info("Stopped by user.")
 
 
@@ -141,6 +162,25 @@ if __name__ == "__main__":
         choices=STT_MODELS,
         default="synap-tiny-float",
         help="Speech-to-text model (default: %(default)s)"
+    )
+    tt_args = parser.add_argument_group("text translation options")
+    tt_args.add_argument(
+        "--tt-lang",
+        type=str,
+        default="zh",
+        help="Target language for translation"
+    )
+    tt_args.add_argument(
+        "--tt-model",
+        type=str,
+        choices=[m for m in TT_MODELS if "synap" in m],
+        default="synap-quantized",
+        help="Text translation model (default: %(default)s)"
+    )
+    tt_args.add_argument(
+        "--num-beams",
+        type=int,
+        help="Specify number of beams to use for decoding beam search"
     )
     args = parser.parse_args()
 
