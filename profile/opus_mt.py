@@ -2,71 +2,66 @@ import argparse
 import logging
 from typing import Final
 
+from ._utils import ProfilerBase, ProfilingStat, add_common_args, configure_logging
 from core.translation.opus_mt import OpusMTSynap, MODEL_CHOICES
 
 SAMPLE_INPUT: Final = "Although recent advancements in artificial intelligence have significantly improved natural language understanding, challenges remain in ensuring models grasp contextual nuance, especially when processing complex, multi-clause sentences like this one."
 
 
-def configure_logging(verbosity: str):
-    level = getattr(logging, verbosity.upper(), None)
-    if not isinstance(level, int):
-        raise ValueError(f"Invalid log level: {verbosity}")
+class OpusMTProfiler(ProfilerBase):
 
-    handler = logging.StreamHandler()
-    formatter = logging.Formatter("%(levelname)s: %(message)s")
-    handler.setFormatter(formatter)
+    def __init__(
+        self,
+        model_names: str,
+        logger: logging.Logger,
+        sample_text: str,
+        *,
+        run_forever: bool = True,
+        n_threads: int | None = None,
+        n_beams: int | None = None
+    ):
+        super().__init__(
+            model_names, logger,
+            run_forever=run_forever,
+            n_threads=n_threads
+        )
 
-    root_logger = logging.getLogger()
-    root_logger.setLevel(level)
-    root_logger.handlers.clear()
-    root_logger.addHandler(handler)
+        max_inp_len: int | None = None
+        self._sample_input = sample_text
+        self._models: dict[str, OpusMTSynap] = {}
+        for model_name in self._model_names:
+            _, model_quant = model_name.split("-")
+            self._models[model_name] = OpusMTSynap(
+                "en", "fr", model_quant, num_beams=n_beams, n_threads=n_threads
+            )
+            if not isinstance(max_inp_len, int) or self._models[model_name].max_inp_len < max_inp_len:
+                max_inp_len = self._models[model_name].max_inp_len
+        if isinstance(max_inp_len, int):
+            self._update_env_param("max_inp_size", ProfilingStat("Max input size", max_inp_len, "tokens"))
+            self._sample_input = self._sample_input[:max_inp_len]
+
+    def _get_inference_time(self, model_name: str):
+        model = self._models[model_name]
+        model.translate(self._sample_input)
+        return model.last_infer_time
+
+    def _cleanup(self, model_name: str):
+        self._models[model_name].cleanup()
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument(
-        "-m", "--models",
-        type=str,
-        metavar="MODEL",
-        nargs="+",
-        choices=[m for m in MODEL_CHOICES if "synap" in m],
-        default=["synap-float"],
-        help="Moonshine models to profile (default: %(default)s), available:\n%(choices)s"
-    )
-    parser.add_argument(
-        "-r", "--repeat",
-        type=int,
-        default=100,
-        help="Number of iterations to repeat inference (default: %(default)s)"
-    )
-    parser.add_argument(
-        "-i", "--input",
-        type=str,
-        default=SAMPLE_INPUT,
-        help="Input text for inference (default: \"%(default)s)\""
-    )
-    parser.add_argument(
-        "-j", "--threads",
-        type=int,
-        help="Number of cores to use for CPU execution (default: all)"
+    add_common_args(
+        parser,
+        model_choices=[m for m in MODEL_CHOICES if "synap" in m],
+        default_model=["synap-float"],
+        default_input=SAMPLE_INPUT,
+        input_desc="Input text for inference"
     )
     parser.add_argument(
         "-b", "--num-beams",
         type=int,
         help="Specify number of beams to use for decoding beam search"        
-    )
-    parser.add_argument(
-        "--logging",
-        type=str,
-        choices=["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"],
-        default="INFO",
-        help="Logging verbosity: %(choices)s (default: %(default)s)"
-    )
-    parser.add_argument(
-        "--run-forever",
-        action="store_true",
-        default=False,
-        help="Run profiling forever, alternating between provided models"
     )
     args = parser.parse_args()
 
@@ -74,42 +69,11 @@ if __name__ == "__main__":
     logger = logging.getLogger(__name__)
     logger.info("Starting profiling...")
 
-    models: dict[str, OpusMTSynap] = {}
-    for model_name in args.models:
-        model_type, model_quant = model_name.split("-")
-        models[model_name] = OpusMTSynap(
-            "en", "fr", model_quant, num_beams=args.num_beams, n_threads=args.threads
-        )
-    infer_times: dict[str, dict] = {
-        model_name: {"n_iters": 0, "total_infer_time": 0} for model_name in models
-    }
-
-    while True:
-        try:
-            for model_name, model in models.items():
-                logger.info(f"Profiling '{model_name}' ({args.repeat} iters)...")
-                try:
-                    for _ in range(args.repeat):
-                        model.translate(args.input)
-                        infer_times[model_name]["n_iters"] += 1
-                        infer_times[model_name]["total_infer_time"] += model.last_infer_time or 0
-                except Exception as e:
-                    logger.warning(f"Stopping inference due to error: {e}")
-                    break
-        except KeyboardInterrupt:
-            break
-        
-        if not args.run_forever:
-            break
-
-    print("\n\nProfiling report")
-    print("------------------------------------")
-    print("Environment:")
-    print(f"\tMax CPU threads: {args.threads}")
-    for model_name in models:
-        n_iters = infer_times[model_name]["n_iters"]
-        total_infer_time = infer_times[model_name]["total_infer_time"]
-        print(f"\nStats for '{model_name}' ({n_iters} iters):")
-        print(f"\tTotal inference time   : {total_infer_time * 1000:.3f} ms")
-        print(f"\tAverage inference time : {(total_infer_time / n_iters) * 1000:.3f} ms")
+    profiler = OpusMTProfiler(
+        args.models, logger, args.input,
+        run_forever=args.run_forever,
+        n_threads=args.threads,
+        n_beams=args.num_beams
+    )
+    profiler.profile_models(args.repeat)
 

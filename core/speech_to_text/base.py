@@ -42,8 +42,8 @@ class BaseSpeechToTextModel(ABC):
         return self._infer_stats
     
     @property
-    def last_infer_time(self) -> float | None:
-        return self._transcribe_times[-1] if self._transcribe_times else None
+    def last_infer_time(self) -> float:
+        return self._transcribe_times[-1] if self._transcribe_times else 0
     
     @property
     def n_infer(self) -> int:
@@ -54,8 +54,8 @@ class BaseSpeechToTextModel(ABC):
         return sum(self._transcribe_times)
     
     @property
-    def avg_infer_time(self) -> float | None:
-        return (self.total_infer_time / self.n_infer) if self._transcribe_times else None
+    def avg_infer_time(self) -> float:
+        return (self.total_infer_time / self.n_infer) if self._transcribe_times else 0
 
     def _load_config(self):
         path = download_from_hf(repo_id=self.config_hf_repo, filename="config.json")
