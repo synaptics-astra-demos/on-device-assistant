@@ -1,4 +1,5 @@
 import json
+import logging
 import math
 from itertools import product
 from typing import Any, Final, Iterable, Literal
@@ -15,6 +16,8 @@ MODEL_TYPES: Final = ["onnx", "synap"]
 QUANT_TYPES: Final = ["float", "quantized"]
 MODEL_CHOICES: Final = [f"{t}-{q}" for (t, q) in product(MODEL_TYPES, QUANT_TYPES)]
 NUM_BEAMS: Final = 4
+
+logger = logging.getLogger(__name__)
 
 
 class OpusMTTokenizer:
@@ -36,6 +39,16 @@ class OpusMTTokenizer:
         with open(download_from_hf(hf_repo, "vocab.json"), "r") as f:
             self._vocab: dict[str, int] = json.load(f)
             self._token_map: dict[int, str] = {v: k for k, v in self._vocab.items()}
+        self._inp_trunc: int = 0
+        self._inp_pad: int = 0
+
+    @property
+    def input_truncation_len(self) -> int:
+        return self._inp_trunc
+
+    @property
+    def input_padding_len(self) -> int:
+        return self._inp_pad
 
     def __call__(
         self,
@@ -56,16 +69,20 @@ class OpusMTTokenizer:
         text: str,
         max_length: int | None,
     ) -> np.ndarray:
+        self._inp_trunc = 0
+        self._inp_pad = 0
         tokens = [self._vocab[raw_token] for raw_token in self._encoder.encode(text, out_type=str)]
         tokens.append(self._eos_token)
         n_tokens = len(tokens)
         max_length = max_length or n_tokens
-        if n_tokens >= max_length:
+        if n_tokens > max_length:
             tokens = tokens[:max_length]
             tokens[-1] = self._eos_token
+            self._inp_trunc = max_length - n_tokens
         else:
             diff = max_length - len(tokens)
             tokens = tokens + [self._pad_token] * diff
+            self._inp_pad = diff
         return np.asarray(tokens, dtype=np.int64)
 
     def encode(
@@ -237,6 +254,10 @@ class OpusMTBase(BaseTranslationModel):
         if isinstance(max_tokens, int) and max_tokens < self.max_tokens:
             self.max_tokens = max_tokens
 
+        if (trunc_len := self.tokenizer.input_truncation_len) > 0:
+            logger.warning("%s: Truncating input from %d to %d tokens", self.__class__.__name__, self.max_inp_len + trunc_len, self.max_inp_len)
+        elif (pad_len := self.tokenizer.input_padding_len) > 0:
+            logger.debug("%s: Padding input from %d to %d tokens", self.__class__.__name__, self.max_inp_len, self.max_inp_len + pad_len)
         enc_out: np.ndarray = self._run_encoder(inputs)
         attn_mask: np.ndarray = inputs["attention_mask"]
         seqs: list[list[int]] = [[self.start_token_id] for _ in range(self.num_beams)]

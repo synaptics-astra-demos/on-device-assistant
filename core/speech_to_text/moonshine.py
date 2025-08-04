@@ -78,10 +78,10 @@ class MoonshineSynap(BaseSpeechToTextModel):
     def _size_input(self, input: np.ndarray) -> np.ndarray:
         input = input.flatten()
         if len(input) > self.max_inp_len:
-            logger.warning(f"MoonshineSynap: Truncating input from {len(input)} to {self.max_inp_len}")
+            logger.warning("MoonshineSynap: Truncating input from %d to %d samples", len(input), self.max_inp_len)
             input = input[:self.max_inp_len]
         elif len(input) < self.max_inp_len:
-            logger.debug(f"MoonshineSynap: Padding input from {len(input)} to {self.max_inp_len}")
+            logger.debug("MoonshineSynap: Padding input from %d to %d samples", len(input), self.max_inp_len)
             input = np.pad(input, (0, self.max_inp_len - len(input)), constant_values=self.encoder_pad_id)
         return input.reshape((1, self.max_inp_len)).astype(np.float16)
 

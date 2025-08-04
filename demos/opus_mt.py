@@ -47,7 +47,7 @@ if __name__ == "__main__":
         "-m", "--model",
         type=str,
         metavar="MODEL",
-        choices=MODEL_CHOICES,
+        choices=[m for m in MODEL_CHOICES if "synap" in m],
         default="synap-quantized",
         help="Model type to use for inference (available:\n%(choices)s)"
     )

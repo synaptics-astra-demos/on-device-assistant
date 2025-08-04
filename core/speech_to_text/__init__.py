@@ -61,7 +61,6 @@ class SpeechToTextAgent:
         threshold: float = 0.3,
         min_silence_duration_ms: int = 300,
     ):
-        logger.info("Initializing %s ...", str(self))
         self.handler = handler
 
         self.speech_to_text = moonshine_factory(
@@ -83,6 +82,8 @@ class SpeechToTextAgent:
         self.lookback_size = LOOKBACK_CHUNKS * CHUNK_SIZE
         self.speech = np.empty(0, dtype=np.float32)
         self.recording = False
+
+        logger.debug("Initialized %s", str(self))
 
     def __repr__(self):
         return f"SpeechToTextAgent@{hex(id(self))}"
@@ -151,10 +152,10 @@ class SpeechToTextAgent:
             raise
 
     def cleanup(self):
-        logger.info("Cleaning up %s ...", str(self))
         self.speech_to_text.cleanup()
         self.vad_iterator = None
         self.audio_manager = None
+        logger.debug("Cleaned up %s", str(self))
 
     def transcribe_wav(self, wav) -> str:
         data, _ = sf.read(wav, dtype="float32")
