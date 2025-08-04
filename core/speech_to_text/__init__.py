@@ -123,6 +123,7 @@ class SpeechToTextAgent:
             call_end_recording = False
 
             for chunk in self.audio_manager.read(chunk_size=CHUNK_SIZE):
+                print("Listening...", end="\r")
                 if call_end_recording:
                     self.end_recording()
                     call_end_recording = False
