@@ -82,8 +82,8 @@ if __name__ == "__main__":
     add_common_args(parser)
     args = parser.parse_args()
 
+    configure_logging(args.logging)
     logger = logging.getLogger(__name__)
-    configure_logging(logger, args.logging)
     logger.info("Starting demo...")
 
     main()
