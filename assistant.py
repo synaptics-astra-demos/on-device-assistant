@@ -82,25 +82,23 @@ def main():
     text_agent = TextEmbeddingsAgent(
         args.emb_model, args.qa_file,
         n_threads=args.threads,
-        eager_load=args.eager_load
+        eager_load=not args.no_eager_load
     )
     stt_agent = SpeechToTextAgent(
         args.stt_model, handle_speech_input,
         n_threads=args.threads,
         threshold=args.threshold,
         min_silence_duration_ms=args.silence_ms,
-        eager_load=args.eager_load
+        eager_load=not args.no_eager_load
     )
     tt_agent = TextTranslationAgent(
         "en", args.tt_lang, args.tt_model,
         n_threads=args.threads,
         n_beams=args.num_beams,
-        eager_load=args.eager_load
+        eager_load=not args.no_eager_load
     )
     tts_agent = TextToSpeechAgent()
     try:
-        if not args.eager_load:
-            logger.warning("Eager loading disabled: initial inference will be slower")
         stt_agent.run()
     except KeyboardInterrupt:
         text_agent.cleanup()
@@ -124,10 +122,10 @@ if __name__ == "__main__":
         help="Number of cores to use for CPU execution (default: all)"
     )
     parser.add_argument(
-        "--eager-load",
+        "--no-eager-load",
         action="store_true",
         default=False,
-        help="Eager load models: increased memory usage but faster first inference time"
+        help="Do not eager load models: less initial memory usage but slower initial inference"
     )
     emb_args = parser.add_argument_group("embeddings options")
     emb_args.add_argument(

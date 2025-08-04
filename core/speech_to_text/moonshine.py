@@ -72,8 +72,8 @@ class MoonshineSynap(BaseSpeechToTextModel):
         self.dec_cache_tensors = [k for k in self.all_cache_tensors if "encoder" not in k]
         self.decoder_cache: dict[str, np.ndarray] = {}
 
-        if eager_load: # warm-up only if eager loading since warm-up loads & keeps model in memory
-            self.transcribe(np.zeros(rate, dtype=np.float32))
+        if not eager_load:
+            logger.warning("%s: Eager loading disabled, initial inference will be slower", self.__class__.__name__)
     
     def _size_input(self, input: np.ndarray) -> np.ndarray:
         input = input.flatten()
@@ -203,6 +203,8 @@ class MoonshineOnnx(BaseSpeechToTextModel):
         )
         if eager_load: # warm-up only if eager loading since warm-up loads & keeps model in memory
             self.transcribe(np.zeros(rate, dtype=np.float32))
+        else:
+            logger.warning("%s: Eager loading disabled, initial inference will be slower", self.__class__.__name__)
 
     def _generate(self, audio: np.ndarray, max_len: int | None = None) -> np.ndarray:
         if max_len is None:

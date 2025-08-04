@@ -385,6 +385,8 @@ class OpusMTOnnx(OpusMTBase):
             cache_shapes,
             num_beams=num_beams
         )
+        if not eager_load:
+            logger.warning("%s: Eager loading disabled, initial inference will be slower", self.__class__.__name__)
 
 
 class OpusMTSynap(OpusMTBase):
@@ -440,6 +442,8 @@ class OpusMTSynap(OpusMTBase):
             is_static=True,
             num_beams=num_beams
         )
+        if not eager_load:
+            logger.warning("%s: Eager loading disabled, initial inference will be slower", self.__class__.__name__)
 
 
 def main():
