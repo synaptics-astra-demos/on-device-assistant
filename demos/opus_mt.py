@@ -49,7 +49,7 @@ if __name__ == "__main__":
         metavar="MODEL",
         choices=[m for m in MODEL_CHOICES if "synap" in m],
         default="synap-quantized",
-        help="Model type to use for inference (available:\n%(choices)s)"
+        help="Opus-MT model to use (default: %(default)s, available:\n%(choices)s)"
     )
     parser.add_argument(
         "-b", "--num-beams",

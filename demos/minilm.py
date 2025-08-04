@@ -71,7 +71,7 @@ if __name__ == "__main__":
         metavar="MODEL",
         choices=MODEL_CHOICES,
         default="synap-quantized",
-        help="Moonshine model to use (default: %(default)s), available:\n%(choices)s"
+        help="MiniLM model to use (default: %(default)s), available:\n%(choices)s"
     )
     parser.add_argument(
         "--normalize",
