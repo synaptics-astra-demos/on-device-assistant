@@ -3,9 +3,9 @@ import logging
 from typing import Final
 
 from ._utils import ProfilerBase, ProfilingStat, add_common_args, configure_logging
-from core.translation.opus_mt import OpusMTSynap, MODEL_CHOICES
+from core.translation.opus_mt import OpusMTOnnx, OpusMTSynap, MODEL_CHOICES
 
-SAMPLE_INPUT: Final = "This is a simple sentence."
+SAMPLE_INPUT: Final = "This is a simple sentence. This is a more complex sentence, with punctuation and more words."
 
 
 class OpusMTProfiler(ProfilerBase):
@@ -30,10 +30,15 @@ class OpusMTProfiler(ProfilerBase):
         self._sample_input = sample_text
         self._models: dict[str, OpusMTSynap] = {}
         for model_name in self._model_names:
-            _, model_quant = model_name.split("-")
-            self._models[model_name] = OpusMTSynap(
-                "en", "zh", model_quant, num_beams=n_beams, n_threads=n_threads
-            )
+            model_type, model_quant = model_name.split("-")
+            if model_type == "onnx":
+                self._models[model_name] = OpusMTOnnx(
+                    "en", "zh", model_quant, num_beams=n_beams, n_threads=n_threads
+                )
+            else:
+                self._models[model_name] = OpusMTSynap(
+                    "en", "zh", model_quant, num_beams=n_beams, n_threads=n_threads
+                )
             if not isinstance(max_inp_len, int) or self._models[model_name].max_inp_len < max_inp_len:
                 max_inp_len = self._models[model_name].max_inp_len
         if isinstance(max_inp_len, int):
@@ -53,7 +58,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     add_common_args(
         parser,
-        model_choices=[m for m in MODEL_CHOICES if "synap" in m],
+        model_choices=MODEL_CHOICES,
         default_model=["synap-float"],
         default_input=SAMPLE_INPUT,
         input_desc="Input text for inference"

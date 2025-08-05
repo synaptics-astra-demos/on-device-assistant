@@ -151,7 +151,7 @@ class OpusMTBase(BaseTranslationModel):
         self.decoder_with_past = decoder_with_past
         self.cache_shapes = cache_shapes
         self.max_inp_len = max_inp_len
-        self.max_tokens = max_tokens
+        self.max_tokens = max_tokens or self.config["max_length"]
         self.is_static = is_static
         self.num_beams = num_beams if isinstance(num_beams, int) and num_beams > 0 else int(self.config.get("num_beams", NUM_BEAMS))
         self.length_penalty = length_penalty

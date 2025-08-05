@@ -115,7 +115,7 @@ class OnnxInferenceRunner(InferenceRunner):
 
     def unload(self):
         self._sess = None
-        logger.info("OnnxInferenceRunner@%d: ORT session @ '%s' set to None", id(self), str(self._model_path))
+        logger.debug("OnnxInferenceRunner@%d: ORT session @ '%s' set to None", id(self), str(self._model_path))
 
 
 class SynapInferenceRunner(InferenceRunner):

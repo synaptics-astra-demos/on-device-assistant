@@ -47,7 +47,7 @@ if __name__ == "__main__":
         "-m", "--model",
         type=str,
         metavar="MODEL",
-        choices=[m for m in MODEL_CHOICES if "synap" in m],
+        choices=MODEL_CHOICES,
         default="synap-quantized",
         help="Opus-MT model to use (default: %(default)s, available:\n%(choices)s)"
     )
