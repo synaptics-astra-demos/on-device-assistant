@@ -53,8 +53,9 @@ def main():
             answer = replace_tool_tokens(answer, tools)
             print(format_answer(answer, emb_infer_time, stats=[InferenceStat("Similarity", f"{similarity:.6f}")]))
     except KeyboardInterrupt:
-        text_agent.cleanup()
         logger.info("Stopped by user.")
+    finally:
+        text_agent.cleanup()
 
 
 if __name__ == "__main__":

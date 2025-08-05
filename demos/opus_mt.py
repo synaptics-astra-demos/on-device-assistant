@@ -24,9 +24,9 @@ def main():
             translated = agent.translate(text)
             print(format_answer(translated, agent.last_infer_time, agent_name="Translated"))
     except KeyboardInterrupt:
-        agent.cleanup()
         logger.info("Stopped by user.")
-
+    finally:
+        agent.cleanup()
 
 
 if __name__ == "__main__":

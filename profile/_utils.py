@@ -73,8 +73,8 @@ class ProfilerBase(ABC):
                 self._cleanup(model_name)
 
         self._sys_prof.start()
-        while True:
-            try:
+        try:
+            while True:
                 for model_name in self._model_names:
                     self._logger.info(f"Profiling '{model_name}' ({n_iters} iters)...")
                     infer_stats: dict[str, ProfilingStat] = self._all_stats["infer_stats"][model_name]
@@ -88,11 +88,11 @@ class ProfilerBase(ABC):
                         break
                 if not self._run_forever:
                     break
-            except KeyboardInterrupt:
-                print("Stopped by user.")
-                break
-        _cleanup_models()
-        self._sys_prof.stop()
+        except KeyboardInterrupt:
+            print("Stopped by user.")
+        finally:
+            _cleanup_models()
+            self._sys_prof.stop()
     
         for model_name, infer_stats in self._all_stats["infer_stats"].items():
             n_iters = infer_stats["n_iters"].value

@@ -35,8 +35,9 @@ def main():
         else:
             agent.run()
     except KeyboardInterrupt:
-        agent.cleanup()
         logger.info("Stopped by user.")
+    finally:
+        agent.cleanup()
 
 
 if __name__ == "__main__":

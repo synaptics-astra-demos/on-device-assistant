@@ -101,10 +101,11 @@ def main():
     try:
         stt_agent.run()
     except KeyboardInterrupt:
+        logger.info("Stopped by user.")
+    finally:
         text_agent.cleanup()
         stt_agent.cleanup()
         tt_agent.cleanup()
-        logger.info("Stopped by user.")
 
 
 if __name__ == "__main__":
