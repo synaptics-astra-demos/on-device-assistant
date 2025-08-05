@@ -153,7 +153,7 @@ def add_common_args(
         "-i", "--input",
         type=str,
         default=default_input,
-        help=input_desc + " (default: \"%(default)s)\""
+        help=input_desc + " (default: \"%(default)s\")"
     )
     parser.add_argument(
         "-j", "--threads",

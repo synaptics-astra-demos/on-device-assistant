@@ -5,7 +5,9 @@ from typing import Final
 from ._utils import ProfilerBase, add_common_args, configure_logging
 from core.embeddings.minilm import MiniLMLlama, MiniLMSynap, MODEL_CHOICES
 
-SAMPLE_INPUT: Final[str] = "Although recent advancements in artificial intelligence have significantly improved natural language understanding, challenges remain in ensuring models grasp contextual nuance, especially when processing complex, multi-clause sentences like this one."
+SAMPLE_INPUT: Final[str] = """
+While calibrating the signal processing pipeline for a resource-constrained microcontroller, remember to profile every arithmetic operation, cache intermediate transforms, eliminate redundant dynamic allocations, precompute lookup tables for trigonometric kernels, align memory buffers to the DMA boundary, and, above all, document each assumption regarding endian order, fixed-point scaling, interrupt latency, and peripheral clock stability. Future maintainers will depend on your explicit rationale to replicate benchmarks, identify race conditions, port drivers to silicon revisions with subtle errata, and refactor legacy code paths.
+""".strip("\n")
 
 
 class MiniLMProfiler(ProfilerBase):
