@@ -19,9 +19,9 @@ if __name__ == "__main__":
 
     print(CYAN + "Downloading models..." + RESET)
     # download MiniLM models
-    download_from_url(
-        url="https://github.com/spal-synaptics/on-device-assistant/releases/download/models-v1/all-MiniLM-L6-v2-Q8_0.gguf",
-        filename=MODELS_DIR / f"gguf/all-MiniLM-L6-v2-Q8_0.gguf"
+    download_from_hf(
+        repo_id="second-state/All-MiniLM-L6-v2-Embedding-GGUF",
+        filename="all-MiniLM-L6-v2-Q8_0.gguf"
     )
     download_from_url(
         url="https://github.com/spal-synaptics/on-device-assistant/releases/download/models-v1/all-MiniLM-L6-v2-quantized.synap",
@@ -37,11 +37,11 @@ if __name__ == "__main__":
         filename=f"onnx/merged/tiny/float/decoder_model_merged.onnx",
     )
     download_from_hf(
-        repo_id="UsefulSensors/moonshine-base", 
+        repo_id="UsefulSensors/moonshine-tiny", 
         filename="config.json"
     )
     download_from_hf(
-        repo_id="UsefulSensors/moonshine-base", 
+        repo_id="UsefulSensors/moonshine-tiny", 
         filename="tokenizer.json"
     )
     download_from_url(
@@ -55,6 +55,35 @@ if __name__ == "__main__":
     download_from_url(
         url="https://github.com/spal-synaptics/on-device-assistant/releases/download/models-v1/moonshine_tiny_float_decoder_with_past.synap",
         filename=MODELS_DIR / f"synap/moonshine/tiny/float/decoder_with_past.synap"
+    )
+    # download opus-mt-en-zh models
+    download_from_hf(
+        repo_id="Helsinki-NLP/opus-mt-en-zh",
+        filename="source.spm"
+    )
+    download_from_hf(
+        repo_id="Helsinki-NLP/opus-mt-en-zh",
+        filename="target.spm"
+    )
+    download_from_hf(
+        repo_id="Helsinki-NLP/opus-mt-en-zh",
+        filename="config.json"
+    )
+    download_from_hf(
+        repo_id="Helsinki-NLP/opus-mt-en-zh",
+        filename="vocab.json"
+    )
+    download_from_url(
+        url="https://github.com/spal-synaptics/on-device-assistant/releases/download/models-v1/opus-mt-en-zh-float_encoder.synap",
+        filename=MODELS_DIR / f"synap/opus-mt/en-zh/float/encoder.synap"
+    )
+    download_from_url(
+        url="https://github.com/spal-synaptics/on-device-assistant/releases/download/models-v1/opus-mt-en-zh-float_decoder.synap",
+        filename=MODELS_DIR / f"synap/opus-mt/en-zh/float/decoder.synap"
+    )
+    download_from_url(
+        url="https://github.com/spal-synaptics/on-device-assistant/releases/download/models-v1/opus-mt-en-zh-float_decoder_with_past.synap",
+        filename=MODELS_DIR / f"synap/opus-mt/en-zh/float/decoder_with_past.synap"
     )
     # download piper-tts models
     download_from_hf(
