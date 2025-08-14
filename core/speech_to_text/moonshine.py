@@ -42,7 +42,7 @@ class MoonshineSynap(BaseSpeechToTextModel):
             n_threads=n_threads,
             eager_load=eager_load
         )
-        self.encoder = SynapInferenceRunner.from_uri(
+        encoder = SynapInferenceRunner.from_uri(
             url=f"https://github.com/spal-synaptics/on-device-assistant/releases/download/models-v1/moonshine_{model_size}_{self.quant_type}_encoder.synap",
             filename=f"models/synap/moonshine/{model_size}/{self.quant_type}/encoder.synap",
             eager_load=eager_load
@@ -60,7 +60,8 @@ class MoonshineSynap(BaseSpeechToTextModel):
         self.encoder_pad_id: int = 0
         self.max_tok_per_s = max_tok_per_s
         self.cache_shapes: dict[str, list[int]] = {i.name: i.shape for i in self.decoder_with_past.inputs_info}
-        self.max_inp_len: int = next(inp.shape for inp in self.encoder.inputs_info if inp.name == "input_values")[-1]
+        self.max_inp_len: int = next(inp.shape for inp in encoder.inputs_info if inp.name == "input_values")[-1]
+        encoder.unload()
         self.max_tokens: int = next(inp.shape for inp in self.decoder_with_past.inputs_info if "decoder" in inp.name)[2] # assuming shape [B, H, L, D]
         if isinstance(max_tok_per_s, int) and max_tok_per_s > 0:
             user_max_tokens: int = int(self.max_inp_len / 16_000) * max_tok_per_s
@@ -166,7 +167,7 @@ class MoonshineSynap(BaseSpeechToTextModel):
         return np.array([tokens])
 
     def cleanup(self):
-        self.encoder.unload()
+        self.encoder_onnx.unload()
         self.decoder.unload()
         self.decoder_with_past.unload()
 
