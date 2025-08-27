@@ -6,6 +6,7 @@ import signal
 import subprocess
 import sys
 
+from ..utils.audio import AudioManager
 from ..utils.download import download_from_hf
 
 logger = logging.getLogger(__name__)
@@ -17,7 +18,7 @@ def handle_sigint(signum, frame):
 
 
 class TextToSpeechAgent:
-    def __init__(self, voice="en_US-lessac-low", output_dir="output"):
+    def __init__(self, voice="en_US-lessac-low", output_dir="output", audio_manager: AudioManager | None = None):
         # Voice must be in the format LOCALE-VOICENAME-STYLE, e.g. en_US-lessac-low
         parts = voice.split("-")
         if len(parts) != 3:
@@ -36,6 +37,7 @@ class TextToSpeechAgent:
         )
         self.output_dir = os.path.join(os.path.dirname(__file__), output_dir)
         os.makedirs(self.output_dir, exist_ok=True)
+        self.audio_manager = audio_manager or AudioManager()
 
     @staticmethod
     def file_checksum(content: str, hash_length: int = 16) -> str:
