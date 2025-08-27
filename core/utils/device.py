@@ -3,6 +3,7 @@ import subprocess
 
 logger = logging.getLogger(__name__)
 
+
 def get_SoC() -> str | None:
     try:
         soc = subprocess.check_output(['cat', '/etc/hostname']).decode().strip()
@@ -15,6 +16,7 @@ def get_SoC() -> str | None:
         logger.warning("Failed to detect SoC")
         return None
 
+
 def has_npu() -> bool:
     soc = get_SoC()
     if not soc:
@@ -26,6 +28,15 @@ def has_npu() -> bool:
     return True
 
 
+def validate_cpu_only(cpu_only: bool | None) -> bool:
+    npu_available = has_npu()
+    if cpu_only is None:
+        cpu_only = not npu_available
+    elif not npu_available and not cpu_only:
+        logger.warning("NPU not available, switching to CPU execution")
+        cpu_only = True
+    return cpu_only
+
+
 if __name__ == "__main__":
-    print(get_SoC())
-    print(has_npu())
+    pass

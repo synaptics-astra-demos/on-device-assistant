@@ -14,6 +14,7 @@ from core.speech_to_text.moonshine import MODEL_CHOICES as STT_MODELS
 from core.translation import TextTranslationAgent
 from core.translation.opus_mt import MODEL_CHOICES as TT_MODELS
 from core.text_to_speech import TextToSpeechAgent
+from core.utils.device import validate_cpu_only
 
 DEFAULT_QA_FILE: Final = "data/qa_assistant.json"
 DEFAULT_SPEECH_THRESH: Final = 0.5
@@ -124,6 +125,7 @@ def main():
 
     eager_load = not args.no_eager_load
     threads = args.threads
+    cpu_only = validate_cpu_only(args.cpu_only)
 
     emb_agent = None
     if not args.no_emb:
@@ -132,6 +134,7 @@ def main():
             args.qa_file,
             n_threads=threads,
             eager_load=eager_load,
+            cpu_only=cpu_only,
         )
 
     tt_agent = None
@@ -143,6 +146,7 @@ def main():
             n_threads=threads,
             n_beams=args.num_beams,
             eager_load=eager_load,
+            cpu_only=cpu_only,
         )
 
     tts_agent = TextToSpeechAgent()
@@ -166,6 +170,7 @@ def main():
             threshold=args.threshold,
             min_silence_duration_ms=args.silence_ms,
             eager_load=eager_load,
+            cpu_only=cpu_only,
         )
 
     with ExitStack() as stack:
@@ -178,6 +183,8 @@ def main():
             stack.callback(tt_agent.cleanup)
 
         try:
+            if args.cpu_only:
+                logger.info("Running all models on CPU")
             if stt_agent:
                 stt_agent.run()
             else:
@@ -208,6 +215,12 @@ if __name__ == "__main__":
         action="store_true",
         default=False,
         help="Do not eager load models: less initial memory usage but slower initial inference",
+    )
+    parser.add_argument(
+        "--cpu-only",
+        action="store_true",
+        default=None,
+        help="Run all models on the CPU (default for SL1620)",
     )
     emb_args = parser.add_argument_group("embeddings options")
     emb_args.add_argument(

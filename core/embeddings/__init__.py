@@ -10,6 +10,7 @@ from sklearn.metrics.pairwise import cosine_similarity
 
 from .base import BaseEmbeddingsModel
 from .minilm import MiniLMLlama, MiniLMSynap, MODEL_CHOICES
+from ..utils.device import validate_cpu_only
 
 MODELS_DIR = os.getenv("MODELS", "./models")
 
@@ -21,12 +22,14 @@ def minilm_factory(
     *,
     eager_load: bool = True,
     normalize: bool = False,
-    n_threads: int | None = None
+    n_threads: int | None = None,
+    cpu_only: bool | None = None
 ) -> MiniLMLlama | MiniLMSynap:
     if model_name not in MODEL_CHOICES:
         raise ValueError(f"Invalid model '{model_name}', please use one of {MODEL_CHOICES}")
     model_type, quant_type = model_name.split("-")
-    if model_type == "llama":
+    cpu_only = validate_cpu_only(cpu_only)
+    if cpu_only or model_type == "onnx":
         return MiniLMLlama(
             quant_type,
             eager_load=eager_load,
@@ -46,6 +49,7 @@ class TextEmbeddingsAgent:
         model_name: str,
         qa_file: str, 
         *,
+        cpu_only: bool | None = None,
         eager_load: bool = True,
         normalize: bool = False,
         n_threads: int | None = None,
@@ -59,7 +63,8 @@ class TextEmbeddingsAgent:
             model_name,
             eager_load=eager_load,
             normalize=normalize,
-            n_threads=n_threads
+            n_threads=n_threads,
+            cpu_only=cpu_only
         )
         self.cache_dir = Path(cache_root) / "embeddings"
         self.cache_dir.mkdir(parents=True, exist_ok=True)
