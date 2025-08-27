@@ -163,7 +163,7 @@ class MoonshineSynap(BaseSpeechToTextModel):
             tokens.append(next_token)
             if next_token == self.eos_token_id:
                 break
-        self._infer_stats["decoder_tokens"] = i
+        self._infer_stats["decoder_tokens"] = len(tokens)
         return np.array([tokens])
 
     def cleanup(self):
@@ -250,7 +250,7 @@ class MoonshineOnnx(BaseSpeechToTextModel):
                 break
 
         self._infer_stats["decoder_infer_time_ms"] = dec_time
-        self._infer_stats["decoder_tokens"] = i
+        self._infer_stats["decoder_tokens"] = len(gen_tokens)
         return gen_tokens
 
     def cleanup(self):
