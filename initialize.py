@@ -18,23 +18,19 @@ if __name__ == "__main__":
     RESET: Final = "\033[0m"
 
     print(CYAN + "Downloading models..." + RESET)
-    # download MiniLM models
-    download_from_hf(
-        repo_id="second-state/All-MiniLM-L6-v2-Embedding-GGUF",
-        filename="all-MiniLM-L6-v2-Q8_0.gguf"
-    )
+    # download MiniLM
     download_from_url(
         url="https://github.com/spal-synaptics/on-device-assistant/releases/download/models-v1/all-MiniLM-L6-v2-quantized.synap",
         filename=MODELS_DIR / f"synap/all-MiniLM-L6-v2/model_quantized.synap"
     )
-    # download Moonshine models
+    # download Moonshine
     download_from_hf(
         repo_id="UsefulSensors/moonshine",
-        filename=f"onnx/merged/tiny/float/encoder_model.onnx",
+        filename=f"onnx/merged/base/float/encoder_model.onnx",
     )
     download_from_hf(
         repo_id="UsefulSensors/moonshine",
-        filename=f"onnx/merged/tiny/float/decoder_model_merged.onnx",
+        filename=f"onnx/merged/base/float/decoder_model_merged.onnx",
     )
     download_from_hf(
         repo_id="UsefulSensors/moonshine-tiny", 
@@ -44,48 +40,7 @@ if __name__ == "__main__":
         repo_id="UsefulSensors/moonshine-tiny", 
         filename="tokenizer.json"
     )
-    download_from_url(
-        url="https://github.com/spal-synaptics/on-device-assistant/releases/download/models-v1/moonshine_tiny_float_encoder.synap",
-        filename=MODELS_DIR / f"synap/moonshine/tiny/float/encoder.synap"
-    )
-    download_from_url(
-        url="https://github.com/spal-synaptics/on-device-assistant/releases/download/models-v1/moonshine_tiny_float_decoder.synap",
-        filename=MODELS_DIR / f"synap/moonshine/tiny/float/decoder.synap"
-    )
-    download_from_url(
-        url="https://github.com/spal-synaptics/on-device-assistant/releases/download/models-v1/moonshine_tiny_float_decoder_with_past.synap",
-        filename=MODELS_DIR / f"synap/moonshine/tiny/float/decoder_with_past.synap"
-    )
-    # download opus-mt-en-zh models
-    download_from_hf(
-        repo_id="Helsinki-NLP/opus-mt-en-zh",
-        filename="source.spm"
-    )
-    download_from_hf(
-        repo_id="Helsinki-NLP/opus-mt-en-zh",
-        filename="target.spm"
-    )
-    download_from_hf(
-        repo_id="Helsinki-NLP/opus-mt-en-zh",
-        filename="config.json"
-    )
-    download_from_hf(
-        repo_id="Helsinki-NLP/opus-mt-en-zh",
-        filename="vocab.json"
-    )
-    download_from_url(
-        url="https://github.com/spal-synaptics/on-device-assistant/releases/download/models-v1/opus-mt-en-zh-float_encoder.synap",
-        filename=MODELS_DIR / f"synap/opus-mt/en-zh/float/encoder.synap"
-    )
-    download_from_url(
-        url="https://github.com/spal-synaptics/on-device-assistant/releases/download/models-v1/opus-mt-en-zh-float_decoder.synap",
-        filename=MODELS_DIR / f"synap/opus-mt/en-zh/float/decoder.synap"
-    )
-    download_from_url(
-        url="https://github.com/spal-synaptics/on-device-assistant/releases/download/models-v1/opus-mt-en-zh-float_decoder_with_past.synap",
-        filename=MODELS_DIR / f"synap/opus-mt/en-zh/float/decoder_with_past.synap"
-    )
-    # download piper-tts models
+    # download piper-tts
     download_from_hf(
         repo_id="rhasspy/piper-voices",
         filename="en/en_US/lessac/low/en_US-lessac-low.onnx"
@@ -98,9 +53,9 @@ if __name__ == "__main__":
 
     print(CYAN + "Generating TTS cache..." + RESET)
     tts = TextToSpeechAgent()
-    for qa_file in DATA_DIR.glob("qa*.json"):
-        with open(qa_file, "r") as f:
-            answers = [pair["answer"] for pair in json.load(f)]
-            for answer in tqdm(answers, desc=qa_file.name):
-                tts.synthesize(answer)
+    qa_file = DATA_DIR / "qa_dishwasher.json"
+    with open(qa_file, "r") as f:
+        answers = [pair["answer"] for pair in json.load(f)]
+        for answer in tqdm(answers, desc=qa_file.name):
+            tts.synthesize(answer)
     print(GREEN + "TTS cache generation complete." + RESET)

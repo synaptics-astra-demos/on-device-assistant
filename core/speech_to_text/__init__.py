@@ -56,6 +56,7 @@ class SpeechToTextAgent:
         model_name: str,
         handler: Callable[[str], Any],
         *,
+        audio_manager: AudioManager | None = None,
         eager_load: bool = True,
         n_threads: int | None = None,
         threshold: float = 0.3,
@@ -77,7 +78,7 @@ class SpeechToTextAgent:
             min_silence_duration_ms=min_silence_duration_ms,
         )
 
-        self.audio_manager = AudioManager()
+        self.audio_manager = audio_manager or AudioManager()
         self.caption_cache = []
         self.lookback_size = LOOKBACK_CHUNKS * CHUNK_SIZE
         self.speech = np.empty(0, dtype=np.float32)
