@@ -1,6 +1,7 @@
 import argparse
 import json
 import logging
+import re
 import subprocess
 import threading
 from contextlib import ExitStack
@@ -114,6 +115,7 @@ def handle_input(
     tt_agent: TextTranslationAgent | None,
     tts_agent: TextToSpeechAgent | None,
 ):
+    text = re.sub(r'[^a-z0-9\s]', '', text)
     answer = get_embeddings(text, emb_agent) if emb_agent else text
     if tt_agent:
         translate_output(answer, tt_agent)
