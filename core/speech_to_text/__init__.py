@@ -123,7 +123,7 @@ class SpeechToTextAgent:
 
     def run(self):
         try:
-            self.audio_manager.start_record(chunk_size=CHUNK_SIZE)
+            self.audio_manager.start_arecord(chunk_size=CHUNK_SIZE)
             print("Press Ctrl+C to quit speech-to-text.\n")
             start_time = time.time()
             call_end_recording = False
@@ -155,7 +155,7 @@ class SpeechToTextAgent:
                         start_time = time.time()
 
         except KeyboardInterrupt:
-            self.audio_manager.stop_record()
+            self.audio_manager.stop_arecord()
             raise
 
     def cleanup(self):
