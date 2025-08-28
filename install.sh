@@ -35,6 +35,45 @@ fi
 # Download models and pre-generate TTS
 python initialize.py || { print_message $YELLOW "Failed to download models.";}
 
+print_message $GREEN "\nInitialization complete."
+
+# Add assistant as a start-up service
+read -p "Do you want to install the On Device Assistant service to run on boot? (y/n) [default: n]: " user_input
+user_input=${user_input:-n}
+
+if [[ "$user_input" =~ ^[Yy]$ ]]; then
+    echo "Installing the On Device Assistant service..."
+
+    # Define paths
+    SCRIPT_PATH="$CURRENT_DIR/assistant.py"
+    SERVICE_PATH="/etc/systemd/system/on-device-ai-assistant.service"
+
+    # Make sure the Python script is executable
+    chmod +x "$SCRIPT_PATH"
+
+    # Create the systemd service file
+    echo "[Unit]
+Description=On Device Assistant
+After=network.target
+
+[Service]
+WorkingDirectory=$CURRENT_DIR
+ExecStart=$CURRENT_DIR/.venv/bin/python3 $CURRENT_DIR/assistant.py
+Restart=on-failure
+User=root
+
+[Install]
+WantedBy=multi-user.target
+" > "$SERVICE_PATH"
+    chmod 644 "$SERVICE_PATH"
+    systemctl daemon-reload
+    systemctl enable on-device-ai-assistant.service
+    systemctl start on-device-ai-assistant.service
+    echo "Service has been installed. It will run on boot."
+else
+    echo "Service installation skipped."
+fi
+
 # Print completion message
 print_message $GREEN "Setup complete. Run the following commands to start demo:\n"
 print_message $BLUE "source .venv/bin/activate\npython assistant.py"

@@ -7,38 +7,33 @@ logger = logging.getLogger(__name__)
 
 
 class AudioManager:
-    def __init__(self, record_device=None, play_device=None, sample_rate=16000):
+    def __init__(self, device=None, sample_rate=16000, channels=2):
+        self._astra_version = self._get_astra_version()
+        self._device = device or self._get_usb_audio_device()
         self._sample_rate = sample_rate
         self.arecord_process = None
-
-        self._astra_version = self._get_astra_version()
-        self._audio_config = self._get_asoundrc_device()
-
-        self._play_device = play_device or self._get_usb_play_device()
-        self._record_device = record_device or self._get_usb_record_device()
-
-        self._print_final_device_info()
- 
- 
-    @property
-    def play_device(self):
-        """Get the current playback audio device."""
-        return self._play_device
-
-    @play_device.setter
-    def play_device(self, new_device):
-        """Set a new playback audio device."""
-        self._play_device = new_device
+        self._channels = channels
+        
+        # If Astra SDK 1.6 and specific headset detected → force 48kHz
+        if self._astra_version == "1.6.0":
+            try:
+                aplay_output = subprocess.check_output("aplay -l", shell=True, text=True)
+                if any(name in aplay_output for name in ["H3 [INZONE H3]", "SPACE [SPACE]"]):
+                    self._sample_rate = 48000
+                    self._channels = 1
+                    logger.info("Assigned 48000 Hz sample rate for device on Astra SDK v%s", self._astra_version)
+            except Exception as e:
+                logger.warning("Failed to parse aplay output for headset detection: %s", str(e))
 
     @property
-    def record_device(self):
-        """Get the current recording audio device."""
-        return self._record_device
+    def device(self):
+        """Get the current audio device."""
+        return self._device
 
-    @record_device.setter
-    def record_device(self, new_device):
-        """Set a new recording audio device."""
-        self._record_device = new_device
+    @device.setter
+    def device(self, new_device):
+        """Set a new audio device."""
+        self._device = new_device
 
     @property
     def sample_rate(self):
@@ -51,121 +46,72 @@ class AudioManager:
         self._sample_rate = new_sample_rate
 
     def play(self, filename):
-        """Play the audio file using the playback device.
+        """Play the audio file using the specified audio device."""
+        if not self._device:
+            raise RuntimeError("Audio device not set.")
+        
+        device = "plugplay" if getattr(self, "_astra_version", "") == "1.6.0" else self._device
+        logger.debug(f"Playing through: {device}")
+        subprocess.run(["aplay", "-q", "-D", device, filename], check=True)
 
-        If no playback device is available, warn and skip audio playback.
-        """
-        if not self._play_device:
-            logger.warning("No playback device available. Skipping audio playback.")
-            return
-        logger.debug(f"Playing through: {self._play_device}")
-        subprocess.run(["aplay", "-q", "-D", self._play_device, filename], check=True)
-
-    def start_record(self, chunk_size=512):
-        """Start the record process using the recording device."""
+    def start_arecord(self, chunk_size=512):
+        """Start the arecord subprocess."""
         if self.arecord_process:
-            self.stop_record()
-        command = (
-            f"arecord -D {self._record_device} -f S16_LE -r {self._sample_rate} -c 2"
-        )
+            self.stop_arecord()
+        command = f"arecord -D {self._device} -f S16_LE -r {self._sample_rate} -c {self._channels}"
         self.arecord_process = subprocess.Popen(
-            command,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            bufsize=chunk_size,
-            shell=True,
+            command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, bufsize=chunk_size, shell=True
         )
 
-    def stop_record(self):
-        """Stop the record process."""
+    def stop_arecord(self):
+        """Stop the arecord subprocess."""
         if self.arecord_process:
             self.arecord_process.terminate()
             self.arecord_process.wait()
             self.arecord_process = None
 
     def read(self, chunk_size=512):
-        """Read audio data from the record process."""
+        """Read audio data from the arecord subprocess."""
         if not self.arecord_process:
-            raise RuntimeError("Record process not running.")
+            raise RuntimeError("arecord process not running.")
+
         while True:
             data = self.arecord_process.stdout.read(chunk_size * 4)
             if not data:
                 break
             yield np.frombuffer(data, dtype=np.int16)[::2].astype(np.float32) / 32768.0
- 
-    
+
+    def wait_for_audio(self):
+        """Wait until a USB audio device is available."""
+        logger.debug('Waiting for audio device...')
+        while True:
+            process = os.popen("aplay -l | grep USB\\ Audio && sleep 0.5")
+            output = process.read()
+            process.close()
+            if 'USB Audio' in output:
+                logger.info("Found USB audio device: %s", output.strip("\n"))
+                break
+
     def _get_astra_version(self):
+        """Return Astra SDK version if available."""
         try:
             with open("/etc/astra_version", "r") as f:
                 return f.read().strip()
         except Exception:
             return ""
 
-    def _print_final_device_info(self):
-        def get_card_info(card_index):
-            try:
-                output = subprocess.check_output("arecord -l", shell=True, text=True)
-                for line in output.splitlines():
-                    if f"card {card_index}:" in line:
-                        return line.strip()
-            except Exception:
-                return None
-            return None
-
-        # Safely normalize devices
-        record_hw = self._record_device.replace("plughw:", "").replace("hw:", "") if self._record_device else None
-        playback_hw = (
-            self._audio_config.get("asoundrc_device")
-            if self._audio_config.get("asoundrc_device")
-            else self._play_device.replace("plughw:", "").replace("hw:", "")
-            if self._play_device else None
-        )
-
-        # Plugplay fallback
-        if self._record_device == "plugplay":
-            record_hw = self._audio_config.get("asoundrc_device", None)
-
-        # Get card numbers
-        record_card = record_hw.split(",")[0] if record_hw and "," in record_hw else None
-        playback_card = playback_hw.split(",")[0] if playback_hw and "," in playback_hw else None
-
-        # Resolve names
-        rec_info = get_card_info(record_card) if record_card else "No recording device"
-        play_info = get_card_info(playback_card) if playback_card else "No playback device"
-
-        # Output
-        logger.info(f"Recording device : hw:{record_hw or 'None'} - {rec_info}")
-        logger.info(f"Playback device  : hw:{playback_hw or 'None'} - {play_info}")
-
-
-    def _get_asoundrc_device(self):
-        result = {
-            "asoundrc_device": None,
-            "playback_devices": [],
-            "capture_devices": [],
-        }
-
+    def _create_asoundrc_for_sdk_1_6(self):
+        """Write ~/.asoundrc configuration for Astra SDK v1.6 using detected USB Audio device."""
         try:
             pcm_output = subprocess.check_output("cat /proc/asound/pcm", shell=True, text=True)
             for line in pcm_output.splitlines():
-                if "usb" in line.lower() and "audio" in line.lower():
+                line_lower = line.lower()
+                # Check for USB audio device with playback and capture capabilities
+                # Example line: "00-01: USB Audio : USB Audio : playback 1 : capture 1"
+                if "usb" in line_lower and "audio" in line_lower and "playback" in line_lower and "capture" in line_lower:
                     hw_id = line.split(":")[0].strip()
                     card, dev = [str(int(x)) for x in hw_id.split("-")]
                     name = line.split(":")[1].strip().split()[0]
-
-                    if "playback" in line:
-                        result["playback_devices"].append((card, dev, name))
-                    if "capture" in line:
-                        result["capture_devices"].append((card, dev, name))
-
-        except Exception as e:
-            logger.error(f"Error reading /proc/asound/pcm: {e}")
-
-        # Only create .asoundrc if SDK version is 1.6.0
-        if self._astra_version == "1.6.0":
-            for card, dev, _ in result["playback_devices"]:
-                if (card, dev) in [(c, d) for c, d, _ in result["capture_devices"]]:
-                    result["asoundrc_device"] = f"{card},{dev}"
                     asoundrc_content = f"""
 pcm.plugplay {{
     type plug
@@ -176,58 +122,35 @@ pcm.plugplay {{
     }}
 }}
 """
-                    try:
-                        asoundrc_path = os.path.expanduser("~/.asoundrc")
-                        with open(asoundrc_path, "w") as f:
-                            f.write(asoundrc_content.strip() + "\n")
-                            logger.debug(f"Astra SDK {self._astra_version} found, .asoundrc created with hw:{card},{dev}")
-                    except Exception as e:
-                        logger.error(f"Error writing .asoundrc: {e}")
-                    break
+                    with open(os.path.expanduser("~/.asoundrc"), "w") as f:
+                        f.write(asoundrc_content)
+                    logger.debug(f"~/.asoundrc created using USB Audio card {card}, device {dev} ({name})")
+                    return
+            logger.warning("No USB audio device found in /proc/asound/pcm")
+        except Exception as e:
+            logger.error(f"Failed to create ~/.asoundrc: {e}")
 
-        return result
+    def _get_usb_audio_device(self):
+        """Finds the audio device ID for a USB Audio device using `aplay -l`."""
+        self.wait_for_audio()
 
-
-    def _get_usb_record_device(self):
-        capture = self._audio_config["capture_devices"]
-        asoundrc_device = self._audio_config["asoundrc_device"]
-
-        # Add this line: fallback detection of playback_hw for non-1.6 SDKs
-        playback_hw = asoundrc_device or (
-            self._play_device.replace("plughw:", "").replace("hw:", "") if self._play_device else None
-        )
-
-        # Try to avoid using the same device for record and playback
-        for card, dev, name in capture:
-            if f"{card},{dev}" != playback_hw:
-                if self._astra_version == "1.6.0":
-                    return f"hw:{card},{dev}"
-                else:
-                    return f"plughw:{card},{dev}"
-
-        # Fallback: use shared device
-        if self._astra_version == "1.6.0" and asoundrc_device:
-            logger.info(f"No separate mic found. Using shared plugplay (hw:{asoundrc_device})")
+        if self._astra_version == "1.6.0":
+            self._create_asoundrc_for_sdk_1_6()
+            logger.info("Using 'plugplay' device for Astra SDK v1.6.0")
             return "plugplay"
 
-        if capture:
-            card, dev, name = capture[0]
-            logger.info(f"No separate mic found. Using shared device for recording: {name} (plughw:{card},{dev})")
-            return f"plughw:{card},{dev}"
+        try:
+            result = subprocess.run(["aplay", "-l"], capture_output=True, text=True, check=True)
+            lines = result.stdout.splitlines()
+            for line in lines:
+                if "USB Audio" in line:
+                    card_line = line.split()
+                    card_index = card_line[1][:-1]  # Removes trailing colon
+                    device_name = f"plughw:{card_index},0"
+                    # print(f"Found audio device: {device_name}")
+                    return device_name
+        except subprocess.CalledProcessError as e:
+            logger.error(f"Error running `aplay -l`: {e}")
+            return None
 
-        logger.warning("No USB mic available")
-        return None
-
-
-    def _get_usb_play_device(self):
-        if self._astra_version == "1.6.0":
-            return "plugplay" if self._audio_config["asoundrc_device"] else None
-
-        playback = self._audio_config["playback_devices"]
-        if playback:
-            card, dev, name = playback[0]
-            logger.debug(f"Selected speaker: {name} (plughw:{card},{dev})")
-            return f"plughw:{card},{dev}"
-
-        logger.warning("No USB speaker/playback device available")
-        return None
+        return "default"

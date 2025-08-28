@@ -7,6 +7,7 @@ import soundfile as sf
 
 from silero_vad import VADIterator, load_silero_vad
 from ..utils.audio import AudioManager
+from ..utils.device import validate_cpu_only
 
 SAMPLING_RATE: Final = 16000
 CHUNK_SIZE: Final = 512
@@ -26,13 +27,15 @@ def moonshine_factory(
     sampling_rate: int,
     n_threads: int | None = None,
     eager_load: bool = True,
+    cpu_only: bool | None = None
 ) -> "MoonshineOnnx | MoonshineSynap":
     from .moonshine import MoonshineOnnx, MoonshineSynap, MODEL_CHOICES
 
     if model_name not in MODEL_CHOICES:
         raise ValueError(f"Invalid model '{model_name}', please use one of {MODEL_CHOICES}")
     model_type, model_size, quant_type = model_name.split("-")
-    if model_type == "onnx":
+    cpu_only = validate_cpu_only(cpu_only)
+    if cpu_only or model_type == "onnx":
         return MoonshineOnnx(
             model_size=model_size,
             quant_type=quant_type,
@@ -56,6 +59,7 @@ class SpeechToTextAgent:
         model_name: str,
         handler: Callable[[str], Any],
         *,
+        cpu_only: bool | None = None,
         audio_manager: AudioManager | None = None,
         eager_load: bool = True,
         n_threads: int | None = None,
@@ -68,7 +72,8 @@ class SpeechToTextAgent:
             model_name,
             sampling_rate=SAMPLING_RATE,
             eager_load=eager_load,
-            n_threads=n_threads
+            n_threads=n_threads,
+            cpu_only=cpu_only
         )
         self.vad_model = load_silero_vad(onnx=True)
         self.vad_iterator = VADIterator(
@@ -118,7 +123,7 @@ class SpeechToTextAgent:
 
     def run(self):
         try:
-            self.audio_manager.start_record(chunk_size=CHUNK_SIZE)
+            self.audio_manager.start_arecord(chunk_size=CHUNK_SIZE)
             print("Press Ctrl+C to quit speech-to-text.\n")
             start_time = time.time()
             call_end_recording = False
@@ -150,7 +155,7 @@ class SpeechToTextAgent:
                         start_time = time.time()
 
         except KeyboardInterrupt:
-            self.audio_manager.stop_record()
+            self.audio_manager.stop_arecord()
             raise
 
     def cleanup(self):

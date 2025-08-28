@@ -1,4 +1,5 @@
 import logging
+from ..utils.device import validate_cpu_only
 
 logger = logging.getLogger(__name__)
 
@@ -11,14 +12,16 @@ def opus_mt_factory(
     eager_load: bool = True,
     n_beams: int | None = None,
     n_threads: int | None = None,
-    use_onnx_encoder: bool = False
+    use_onnx_encoder: bool = False,
+    cpu_only: bool | None = None
 ) -> "OpusMTOnnx | OpusMTSynap":
     from .opus_mt import OpusMTOnnx, OpusMTSynap, MODEL_CHOICES
 
     if model_name not in MODEL_CHOICES:
         raise ValueError(f"Invalid model '{model_name}', please use one of {MODEL_CHOICES}")
     model_type, quant_type = model_name.split("-")
-    if model_type == "onnx":
+    cpu_only = validate_cpu_only(cpu_only)
+    if cpu_only or model_type == "onnx":
         return OpusMTOnnx(
             source_lang, dest_lang, quant_type,
             num_beams=n_beams,
@@ -42,6 +45,7 @@ class TextTranslationAgent:
         dest_lang: str,
         model_name: str,
         *,
+        cpu_only: bool | None = None,
         eager_load: bool = True,
         n_beams: int | None = None,
         n_threads: int | None = None
@@ -50,7 +54,8 @@ class TextTranslationAgent:
             source_lang, dest_lang, model_name,
             eager_load=eager_load,
             n_beams=n_beams,
-            n_threads=n_threads
+            n_threads=n_threads,
+            cpu_only=cpu_only
         )
         logger.debug("Initialized %s", str(self))
 
