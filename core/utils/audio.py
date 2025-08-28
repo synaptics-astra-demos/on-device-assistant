@@ -1,6 +1,7 @@
 import subprocess
 import logging
 import os
+import time
 import numpy as np
 
 logger = logging.getLogger(__name__)
@@ -81,9 +82,10 @@ class AudioManager:
                 break
             yield np.frombuffer(data, dtype=np.int16)[::2].astype(np.float32) / 32768.0
 
-    def wait_for_audio(self):
+    def wait_for_audio(self, timeout: float = 5.0):
         """Wait until a USB audio device is available."""
         logger.debug('Waiting for audio device...')
+        start = time.time()
         while True:
             process = os.popen("aplay -l | grep USB\\ Audio && sleep 0.5")
             output = process.read()
@@ -91,6 +93,13 @@ class AudioManager:
             if 'USB Audio' in output:
                 logger.info("Found USB audio device: %s", output.strip("\n"))
                 break
+            if time.time() - start > timeout:
+                logger.warning("Timeout reached, no USB audio device found")
+                raise TimeoutError(
+                    f"Timed out after {timeout:.1f}s waiting for a USB audio device. "
+                    "Ensure the device is connected and recognized by the system (check `aplay -l`)."
+                )
+            time.sleep(0.5) # avoid busy-loop
 
     def _get_astra_version(self):
         """Return Astra SDK version if available."""
