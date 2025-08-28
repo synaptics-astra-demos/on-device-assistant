@@ -11,8 +11,9 @@ python assistant.py
 ```
 
 #### Run Options
-* `--qa-file`: Path to Question-Answer pairs (default: [data/qa_assistant.json](data/qa_assistant.json))
+* `--qa-file`: Path to Question-Answer pairs (default: [data/qa_dishwasher.json](data/qa_dishwasher.json))
 * `-j`: Number of cores to use for CPU execution (default: all)
+* `--cpu-only`: Run all models on the CPU (default for SL1620)
 
 Run `python assistant.py --help` to view all available options
 
@@ -39,7 +40,7 @@ python -m profile.<model>
 ```
 
 #### Run Options
-* `--model[s]`: Model(s) to profile, inference runner is selected based on model type
+* `--models`: Model(s) to profile, inference runner is selected based on model type
 * `--run-forever`: Continuosly profile provided models in a loop until interrupted with `ctrl + c`
 * `-j`: Number of cores to use for CPU execution (default: all)
 
