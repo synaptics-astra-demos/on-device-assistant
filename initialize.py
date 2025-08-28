@@ -20,7 +20,7 @@ if __name__ == "__main__":
     print(CYAN + "Downloading models..." + RESET)
     # download MiniLM
     download_from_url(
-        url="https://github.com/spal-synaptics/on-device-assistant/releases/download/models-v1/all-MiniLM-L6-v2-quantized.synap",
+        url="https://github.com/synaptics-astra-demos/on-device-assistant/releases/download/models-v1/all-MiniLM-L6-v2-quantized.synap",
         filename=MODELS_DIR / f"synap/all-MiniLM-L6-v2/model_quantized.synap"
     )
     # download Moonshine

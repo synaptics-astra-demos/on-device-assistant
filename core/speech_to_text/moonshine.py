@@ -43,17 +43,17 @@ class MoonshineSynap(BaseSpeechToTextModel):
             eager_load=eager_load
         )
         encoder = SynapInferenceRunner.from_uri(
-            url=f"https://github.com/spal-synaptics/on-device-assistant/releases/download/models-v1/moonshine_{model_size}_{self.quant_type}_encoder.synap",
+            url=f"https://github.com/synaptics-astra-demos/on-device-assistant/releases/download/models-v1/moonshine_{model_size}_{self.quant_type}_encoder.synap",
             filename=f"models/synap/moonshine/{model_size}/{self.quant_type}/encoder.synap",
             eager_load=eager_load
         )
         self.decoder = SynapInferenceRunner.from_uri(
-            url=f"https://github.com/spal-synaptics/on-device-assistant/releases/download/models-v1/moonshine_{model_size}_{self.quant_type}_decoder.synap",
+            url=f"https://github.com/synaptics-astra-demos/on-device-assistant/releases/download/models-v1/moonshine_{model_size}_{self.quant_type}_decoder.synap",
             filename=f"models/synap/moonshine/{model_size}/{self.quant_type}/decoder.synap",
             eager_load=eager_load
         )
         self.decoder_with_past = SynapInferenceRunner.from_uri(
-            url=f"https://github.com/spal-synaptics/on-device-assistant/releases/download/models-v1/moonshine_{model_size}_{self.quant_type}_decoder_with_past.synap",
+            url=f"https://github.com/synaptics-astra-demos/on-device-assistant/releases/download/models-v1/moonshine_{model_size}_{self.quant_type}_decoder_with_past.synap",
             filename=f"models/synap/moonshine/{model_size}/{self.quant_type}/decoder_with_past.synap",
             eager_load=eager_load
         )

@@ -76,7 +76,7 @@ class MiniLMSynap(BaseEmbeddingsModel):
         super().__init__(normalize=normalize, eager_load=eager_load)
         model_name = "model_quantized.synap" if quant_type == "quantized" else "model_float.synap"
         self.model = SynapInferenceRunner.from_uri(
-            f"https://github.com/spal-synaptics/on-device-assistant/releases/download/models-v1/all-MiniLM-L6-v2-{quant_type}.synap",
+            f"https://github.com/synaptics-astra-demos/on-device-assistant/releases/download/models-v1/all-MiniLM-L6-v2-{quant_type}.synap",
             f"models/synap/all-MiniLM-L6-v2/{model_name}",
             eager_load=eager_load
         )

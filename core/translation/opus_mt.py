@@ -355,19 +355,19 @@ class OpusMTOnnx(OpusMTBase):
         eager_load: bool = True
     ):
         encoder: OnnxInferenceRunner = OnnxInferenceRunner.from_uri(
-            url=f"https://github.com/spal-synaptics/on-device-assistant/releases/download/models-v1/opus-mt-{source_lang}-{dest_lang}-{quant_type}_encoder_model.onnx",
+            url=f"https://github.com/synaptics-astra-demos/on-device-assistant/releases/download/models-v1/opus-mt-{source_lang}-{dest_lang}-{quant_type}_encoder_model.onnx",
             filename=f"models/Helsinki-NLP/opus-mt-{source_lang}-{dest_lang}/{quant_type}/encoder_model.onnx",
             n_threads=n_threads,
             eager_load=eager_load
         )
         decoder: OnnxInferenceRunner = OnnxInferenceRunner.from_uri(
-            url=f"https://github.com/spal-synaptics/on-device-assistant/releases/download/models-v1/opus-mt-{source_lang}-{dest_lang}-{quant_type}_decoder_model.onnx",
+            url=f"https://github.com/synaptics-astra-demos/on-device-assistant/releases/download/models-v1/opus-mt-{source_lang}-{dest_lang}-{quant_type}_decoder_model.onnx",
             filename=f"models/Helsinki-NLP/opus-mt-{source_lang}-{dest_lang}/{quant_type}/decoder_model.onnx",
             n_threads=n_threads,
             eager_load=eager_load
         )
         decoder_with_past: OnnxInferenceRunner = OnnxInferenceRunner.from_uri(
-            url=f"https://github.com/spal-synaptics/on-device-assistant/releases/download/models-v1/opus-mt-{source_lang}-{dest_lang}-{quant_type}_decoder_with_past_model.onnx",
+            url=f"https://github.com/synaptics-astra-demos/on-device-assistant/releases/download/models-v1/opus-mt-{source_lang}-{dest_lang}-{quant_type}_decoder_with_past_model.onnx",
             filename=f"models/Helsinki-NLP/opus-mt-{source_lang}-{dest_lang}/{quant_type}/decoder_with_past_model.onnx",
             n_threads=n_threads,
             eager_load=eager_load
@@ -402,24 +402,24 @@ class OpusMTSynap(OpusMTBase):
         eager_load: bool = True
     ):
         encoder: SynapInferenceRunner = SynapInferenceRunner.from_uri(
-            url=f"https://github.com/spal-synaptics/on-device-assistant/releases/download/models-v1/opus-mt-{source_lang}-{dest_lang}-{quant_type}_encoder.synap",
+            url=f"https://github.com/synaptics-astra-demos/on-device-assistant/releases/download/models-v1/opus-mt-{source_lang}-{dest_lang}-{quant_type}_encoder.synap",
             filename=f"models/synap/opus-mt/{source_lang}-{dest_lang}/{quant_type}/encoder.synap",
             eager_load=eager_load
         )
         if use_onnx_encoder:
             encoder_onnx: OnnxInferenceRunner = OnnxInferenceRunner.from_uri(
-                url=f"https://github.com/spal-synaptics/on-device-assistant/releases/download/models-v1/opus-mt-{source_lang}-{dest_lang}-{quant_type}_encoder_model.onnx",
+                url=f"https://github.com/synaptics-astra-demos/on-device-assistant/releases/download/models-v1/opus-mt-{source_lang}-{dest_lang}-{quant_type}_encoder_model.onnx",
                 filename=f"models/Helsinki-NLP/opus-mt-{source_lang}-{dest_lang}/{quant_type}/encoder_model.onnx",
                 n_threads=n_threads,
                 eager_load=eager_load
             )
         decoder: SynapInferenceRunner = SynapInferenceRunner.from_uri(
-            url=f"https://github.com/spal-synaptics/on-device-assistant/releases/download/models-v1/opus-mt-{source_lang}-{dest_lang}-{quant_type}_decoder.synap",
+            url=f"https://github.com/synaptics-astra-demos/on-device-assistant/releases/download/models-v1/opus-mt-{source_lang}-{dest_lang}-{quant_type}_decoder.synap",
             filename=f"models/synap/opus-mt/{source_lang}-{dest_lang}/{quant_type}/decoder.synap",
             eager_load=eager_load
         )
         decoder_with_past: SynapInferenceRunner = SynapInferenceRunner.from_uri(
-            url=f"https://github.com/spal-synaptics/on-device-assistant/releases/download/models-v1/opus-mt-{source_lang}-{dest_lang}-{quant_type}_decoder_with_past.synap",
+            url=f"https://github.com/synaptics-astra-demos/on-device-assistant/releases/download/models-v1/opus-mt-{source_lang}-{dest_lang}-{quant_type}_decoder_with_past.synap",
             filename=f"models/synap/opus-mt/{source_lang}-{dest_lang}/{quant_type}/decoder_with_past.synap",
             eager_load=eager_load
         )
