@@ -57,6 +57,8 @@ class AudioManager:
 
     def start_arecord(self, chunk_size=512):
         """Start the arecord subprocess."""
+        if not self._device:
+            raise RuntimeError("Audio device not set.")
         if self.arecord_process:
             self.stop_arecord()
         command = f"arecord -D {self._device} -f S16_LE -r {self._sample_rate} -c {self._channels}"
@@ -92,13 +94,14 @@ class AudioManager:
             process.close()
             if 'USB Audio' in output:
                 logger.info("Found USB audio device: %s", output.strip("\n"))
-                break
+                return True
             if time.time() - start > timeout:
-                logger.warning("Timeout reached, no USB audio device found")
-                raise TimeoutError(
-                    f"Timed out after {timeout:.1f}s waiting for a USB audio device. "
-                    "Ensure the device is connected and recognized by the system (check `aplay -l`)."
+                logger.warning(
+                    "Timed out after %.1fs waiting for a USB audio device. "
+                    "Ensure the device is connected and recognized by the system (check `aplay -l`).",
+                    timeout
                 )
+                return False
             time.sleep(0.5) # avoid busy-loop
 
     def _get_astra_version(self):
@@ -141,7 +144,8 @@ pcm.plugplay {{
 
     def _get_usb_audio_device(self):
         """Finds the audio device ID for a USB Audio device using `aplay -l`."""
-        self.wait_for_audio()
+        if not self.wait_for_audio():
+            return None
 
         if self._astra_version == "1.6.0":
             self._create_asoundrc_for_sdk_1_6()
