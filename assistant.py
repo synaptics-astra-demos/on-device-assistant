@@ -92,8 +92,7 @@ def handle_speech_input(
 
 
 def synthesize_text(text: str, tts_agent: TextToSpeechAgent):
-    wav_path = tts_agent.synthesize(text)
-    tts_agent.audio_manager.play(wav_path)
+    tts_agent.synthesize(text, play_audio=True)
 
 
 def translate_output(text: str, tt_agent: TextTranslationAgent):

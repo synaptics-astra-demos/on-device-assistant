@@ -43,7 +43,7 @@ class TextToSpeechAgent:
     def file_checksum(content: str, hash_length: int = 16) -> str:
         return hashlib.sha256(content.encode()).hexdigest()[:hash_length]
 
-    def synthesize(self, text: str, output_filename: str = None) -> str:
+    def synthesize(self, text: str, output_filename: str = None, play_audio: bool = False) -> str:
         if output_filename is None:
             chk = self.file_checksum(self.onnx_file + text)
             output_filename = os.path.join(self.output_dir, f"speech-output-{chk}.wav")
@@ -68,6 +68,13 @@ class TextToSpeechAgent:
 
         logger.debug(f"Caching TTS to '{output_filename}'")
         signal.signal(signal.SIGINT, old_hdlr)
+
+        if play_audio:
+            if self.audio_manager.device:
+                self.audio_manager.play(output_filename)
+            else:
+                logger.warning("Skipping audio playback, no valid playback device in audio manager")
+
         return output_filename
 
 

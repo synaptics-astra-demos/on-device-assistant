@@ -1,6 +1,7 @@
 import subprocess
 import logging
 import os
+import time
 import numpy as np
 
 logger = logging.getLogger(__name__)
@@ -56,6 +57,8 @@ class AudioManager:
 
     def start_arecord(self, chunk_size=512):
         """Start the arecord subprocess."""
+        if not self._device:
+            raise RuntimeError("Audio device not set.")
         if self.arecord_process:
             self.stop_arecord()
         command = f"arecord -D {self._device} -f S16_LE -r {self._sample_rate} -c {self._channels}"
@@ -81,16 +84,25 @@ class AudioManager:
                 break
             yield np.frombuffer(data, dtype=np.int16)[::2].astype(np.float32) / 32768.0
 
-    def wait_for_audio(self):
+    def wait_for_audio(self, timeout: float = 5.0):
         """Wait until a USB audio device is available."""
         logger.debug('Waiting for audio device...')
+        start = time.time()
         while True:
             process = os.popen("aplay -l | grep USB\\ Audio && sleep 0.5")
             output = process.read()
             process.close()
             if 'USB Audio' in output:
                 logger.info("Found USB audio device: %s", output.strip("\n"))
-                break
+                return True
+            if time.time() - start > timeout:
+                logger.warning(
+                    "Timed out after %.1fs waiting for a USB audio device. "
+                    "Ensure the device is connected and recognized by the system (check `aplay -l`).",
+                    timeout
+                )
+                return False
+            time.sleep(0.5) # avoid busy-loop
 
     def _get_astra_version(self):
         """Return Astra SDK version if available."""
@@ -132,7 +144,8 @@ pcm.plugplay {{
 
     def _get_usb_audio_device(self):
         """Finds the audio device ID for a USB Audio device using `aplay -l`."""
-        self.wait_for_audio()
+        if not self.wait_for_audio():
+            return None
 
         if self._astra_version == "1.6.0":
             self._create_asoundrc_for_sdk_1_6()
