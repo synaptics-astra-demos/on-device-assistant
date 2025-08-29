@@ -50,24 +50,23 @@ class TextToSpeechAgent:
 
         if os.path.exists(output_filename):
             logger.debug(f"Found TTS cache at '{output_filename}'")
-            return output_filename
+        else:
+            old_hdlr = signal.getsignal(signal.SIGINT)
+            signal.signal(signal.SIGINT, handle_sigint)
+            echo_proc = subprocess.Popen(
+                ['echo', text],
+                stdout=subprocess.PIPE
+            )
+            piper_proc = subprocess.Popen(
+                ['piper', '--model', self.onnx_file, '--output_file', output_filename],
+                stdin=echo_proc.stdout
+            )
+            echo_proc.stdout.close()  # Allow echo_proc to receive SIGPIPE if piper exits
+            piper_proc.wait()
+            echo_proc.wait()
 
-        old_hdlr = signal.getsignal(signal.SIGINT)
-        signal.signal(signal.SIGINT, handle_sigint)
-        echo_proc = subprocess.Popen(
-            ['echo', text],
-            stdout=subprocess.PIPE
-        )
-        piper_proc = subprocess.Popen(
-            ['piper', '--model', self.onnx_file, '--output_file', output_filename],
-            stdin=echo_proc.stdout
-        )
-        echo_proc.stdout.close()  # Allow echo_proc to receive SIGPIPE if piper exits
-        piper_proc.wait()
-        echo_proc.wait()
-
-        logger.debug(f"Caching TTS to '{output_filename}'")
-        signal.signal(signal.SIGINT, old_hdlr)
+            logger.debug(f"Caching TTS to '{output_filename}'")
+            signal.signal(signal.SIGINT, old_hdlr)
 
         if play_audio:
             if self.audio_manager.device:

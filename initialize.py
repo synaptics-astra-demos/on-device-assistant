@@ -53,9 +53,9 @@ if __name__ == "__main__":
 
     print(CYAN + "Generating TTS cache..." + RESET)
     tts = TextToSpeechAgent()
-    qa_file = DATA_DIR / "qa_dishwasher.json"
-    with open(qa_file, "r") as f:
-        answers = [pair["answer"] for pair in json.load(f)]
-        for answer in tqdm(answers, desc=qa_file.name):
-            tts.synthesize(answer)
+    for qa_file in DATA_DIR.glob("qa*.json"):
+        with open(qa_file, "r") as f:
+            answers = [pair["answer"] for pair in json.load(f)]
+            for answer in tqdm(answers, desc=qa_file.name):
+                tts.synthesize(answer)
     print(GREEN + "TTS cache generation complete." + RESET)

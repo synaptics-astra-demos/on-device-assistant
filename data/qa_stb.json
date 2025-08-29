@@ -1,0 +1,190 @@
+[
+  {
+    "question": "What should I do if my set-top box can't connect to Wi-Fi?",
+    "answer": "Check if the Wi-Fi password is correct. Restart the set-top box and the router. Make sure the router is within range and broadcasting."
+  },
+  {
+    "question": "Why is my internet slow on the Android TV box?",
+    "answer": "Slow speed can be due to weak Wi-Fi signal, network congestion, or outdated firmware. Try switching to 5GHz Wi-Fi or using an Ethernet cable if available."
+  },
+  {
+    "question": "How do I reset the Wi-Fi settings on my STB?",
+    "answer": "Go to Settings > Network > Wi-Fi, select your current network, and choose 'Forget'. Then reconnect by entering the password again."
+  },
+  {
+    "question": "Why does the set-top box disconnect from Wi-Fi randomly?",
+    "answer": "This may be caused by unstable signal strength, interference from other devices, or power-saving settings. Try moving the router closer and disabling any sleep modes."
+  },
+  {
+    "question": "Can I use an Ethernet connection instead of Wi-Fi?",
+    "answer": "Yes, if your STB has an Ethernet port, connect it directly to the router using a LAN cable for more stable performance."
+  },
+  {
+    "question": "How do I check if the STB has internet access?",
+    "answer": "Go to Settings > Network. If connected, it will show 'Connected' under the selected network. You can also test internet access by opening any streaming app."
+  },
+  {
+    "question": "Why does my STB say 'Connected, no internet'?",
+    "answer": "The STB is connected to the router but can't reach the internet. Restart your router and check if other devices can access the internet."
+  },
+  {
+    "question": "Why is there no signal on my TV when using HDMI?",
+    "answer": "Ensure the HDMI cable is securely connected to both the set-top box and the TV. Also, verify that the TV is set to the correct HDMI input source."
+  },
+  {
+    "question": "What should I do if the screen is black after turning on the STB?",
+    "answer": "Try unplugging the HDMI cable and plugging it back in. If the screen stays black, restart both the STB and the TV."
+  },
+  {
+    "question": "Why is the video flickering or cutting out over HDMI?",
+    "answer": "This could be caused by a loose or damaged HDMI cable. Try using a different cable or port. Also, make sure the HDMI cable supports the resolution output of the STB."
+  },
+  {
+    "question": "Can I use an HDMI to VGA adapter with my STB?",
+    "answer": "HDMI to VGA adapters require an active converter with power. Check that the adapter is powered and supports the resolution output of the STB."
+  },
+  {
+    "question": "What HDMI version is required for 4K output?",
+    "answer": "For stable 4K output, use an HDMI 2.0 or higher cable and ensure the TV also supports HDMI 2.0 or higher."
+  },
+  {
+    "question": "Why is there no audio through the HDMI connection?",
+    "answer": "Go to Settings > Audio Output and confirm that 'HDMI' is selected as the output mode. Also, make sure the TV volume is not muted."
+  },
+  {
+    "question": "What should I do if the STB display is not fitting correctly on the screen?",
+    "answer": "Adjust the display settings under Settings > Display > Screen Position or Zoom to fit the screen properly."
+  },
+  {
+    "question": "Why is there no sound from my set-top box?",
+    "answer": "Check the volume on your TV and STB. Ensure the audio cable or HDMI is connected properly. Go to Settings > Audio and make sure the output is not set to 'Off' or 'SPDIF only' if you're using HDMI."
+  },
+  {
+    "question": "What should I do if sound cuts in and out?",
+    "answer": "Intermittent sound may be caused by a loose HDMI or optical cable. Try reseating the cable or using a different one. Also check audio settings for format compatibility."
+  },
+  {
+    "question": "Why is the audio out of sync with video?",
+    "answer": "Go to Settings > Audio and try adjusting the audio delay if available. Also check if enabling or disabling hardware decoding affects sync."
+  },
+  {
+    "question": "How do I enable Dolby Digital audio on my STB?",
+    "answer": "Go to Settings > Audio and select 'Dolby Digital' or 'Dolby Digital Plus' as the audio output format. Make sure your TV or sound system supports Dolby decoding."
+  },
+  {
+    "question": "Does my set-top box support Dolby Atmos?",
+    "answer": "Dolby Atmos is supported only if your STB firmware and hardware support it. Check with your device manufacturer or refer to the system info under Settings > About."
+  },
+  {
+    "question": "Why do I hear no sound when Dolby is enabled?",
+    "answer": "Your TV or receiver may not support the selected Dolby format. Try switching to PCM or standard stereo in the audio settings."
+  },
+  {
+    "question": "Can I force stereo output instead of Dolby?",
+    "answer": "Yes. Go to Settings > Audio Output and set the mode to 'PCM' or 'Stereo' to disable Dolby processing."
+  },
+  {
+    "question": "Why is Dolby Vision not working on my TV?",
+    "answer": "Ensure both your TV and HDMI cable support Dolby Vision. Go to Settings > Display > HDR Format and verify Dolby Vision is enabled. Use HDMI 2.0 or higher."
+  },
+  {
+    "question": "How do I enable Dolby Vision on my set-top box?",
+    "answer": "Go to Settings > Display > HDR Format and select 'Dolby Vision'. Your TV must support Dolby Vision and be connected via a compatible HDMI port."
+  },
+  {
+    "question": "Does my set-top box support HDR10+?",
+    "answer": "Check Settings > Display > HDR Format. If HDR10+ is listed, your box supports it. HDR10+ content also requires a compatible TV and app."
+  },
+  {
+    "question": "Why is HDR not triggering on my TV?",
+    "answer": "Make sure HDR is enabled in Settings > Display > HDR Format. Confirm the app and content support HDR, and that your TV HDMI input is configured for enhanced mode."
+  },
+  {
+    "question": "Can I force SDR output instead of HDR?",
+    "answer": "Yes. Go to Settings > Display and set the HDR Format to 'SDR' or disable 'HDR Auto-detection'. This can help with compatibility issues."
+  },
+  {
+    "question": "Why does my screen look washed out when HDR is on?",
+    "answer": "This could be due to incorrect tone mapping or an unsupported HDR format. Try switching between HDR10, HDR10+, or Dolby Vision to match your TV's capabilities."
+  },
+  {
+    "question": "Is HDR available on all apps?",
+    "answer": "No, only specific apps and content support HDR. Check if the app or video explicitly states HDR, Dolby Vision, or HDR10+ support."
+  },
+    {
+    "question": "How do I install new apps on my Android TV set-top box?",
+    "answer": "Open the Google Play Store app on your STB, search for the app you want, and select 'Install'."
+  },
+  {
+    "question": "Why can’t I find Netflix or YouTube on my STB?",
+    "answer": "Some apps may not be available if your STB is not certified. Check with the manufacturer or update the firmware. You may also need to update Google Play Services."
+  },
+  {
+    "question": "How do I clear cache for an app?",
+    "answer": "Go to Settings > Apps > Select the app > Clear Cache. This can help fix app freezing or crashing issues."
+  },
+  {
+    "question": "Why do apps crash or freeze on my STB?",
+    "answer": "Apps may crash due to low memory, outdated versions, or bugs. Try clearing cache, reinstalling the app, or updating your STB firmware."
+  },
+  {
+    "question": "How do I update the software on my STB?",
+    "answer": "Go to Settings > Device Preferences > About > System Update. Follow the prompts to check and install updates."
+  },
+  {
+    "question": "Why is my remote control not working?",
+    "answer": "Replace the batteries and ensure the remote is paired with the STB. For Bluetooth remotes, go to Settings > Remotes & Accessories to re-pair."
+  },
+  {
+    "question": "How do I pair a Bluetooth remote or game controller?",
+    "answer": "Go to Settings > Remotes & Accessories > Add Accessory. Put the device in pairing mode and select it from the list."
+  },
+  {
+    "question": "What should I do if there is no response when I press buttons on the remote?",
+    "answer": "Check if the LED on the remote flashes when pressing buttons. If not, replace batteries. If yes, try re-pairing or restarting the STB."
+  },
+  {
+    "question": "Why does the STB feel slow or laggy?",
+    "answer": "Too many apps running in the background can slow it down. Close unused apps, clear cache, or restart the STB."
+  },
+  {
+    "question": "How do I free up storage on my STB?",
+    "answer": "Go to Settings > Storage. Uninstall unused apps or move apps to external storage if supported."
+  },
+  {
+    "question": "Can I connect external USB storage to my STB?",
+    "answer": "Yes, if your STB has a USB port. Go to Settings > Storage and format the USB drive as internal or external storage."
+  },
+  {
+    "question": "How do I restart or factory reset my STB?",
+    "answer": "Restart: Hold the power button on the remote or unplug and plug back in. Factory reset: Go to Settings > Device Preferences > Reset > Factory data reset."
+  },
+  {
+    "question": "Why does my STB not turn on?",
+    "answer": "Check the power cable and adapter. Try plugging into another outlet. If the LED does not light up, the power supply may be faulty."
+  },
+  {
+    "question": "How do I enable developer options on my STB?",
+    "answer": "Go to Settings > Device Preferences > About > Build number. Tap 'Build number' 7 times to enable Developer Options."
+  },
+  {
+    "question": "Can I connect a Bluetooth headset to my STB?",
+    "answer": "Yes. Go to Settings > Remotes & Accessories > Add Accessory. Put your headset in pairing mode and select it."
+  },
+  {
+    "question": "Why is Google Assistant not working on my STB?",
+    "answer": "Check if the remote has a mic button and is paired correctly. Make sure the STB is connected to the internet and that Google Assistant is enabled in Settings."
+  },
+  {
+    "question": "How do I cast from my phone to the STB?",
+    "answer": "Ensure your phone and STB are on the same Wi-Fi network. Open a Cast-enabled app on your phone and select your STB from the cast menu."
+  },
+  {
+    "question": "Why is screen casting laggy?",
+    "answer": "Lag can be caused by weak Wi-Fi. Use a 5GHz network or Ethernet connection for better performance."
+  },
+  {
+    "question": "How do I enable subtitles or closed captions?",
+    "answer": "During playback, press the remote’s menu or CC button if available, or go to Settings > Device Preferences > Accessibility > Captions."
+  }
+]
