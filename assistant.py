@@ -14,13 +14,13 @@ from core.speech_to_text import SpeechToTextAgent
 from core.speech_to_text.moonshine import MODEL_CHOICES as STT_MODELS
 from core.translation import TextTranslationAgent
 from core.translation.opus_mt import MODEL_CHOICES as TT_MODELS
-from core.text_to_speech import TextToSpeechAgent
+from core.text_to_speech import TextToSpeechAgent, MODEL_CHOICES as TTS_MODELS
 from core.utils.device import validate_cpu_only
 
-DEFAULT_QA_FILE: Final = "data/qa_assistant.json"
+DEFAULT_QA_FILE: Final = "data/qa_dishwasher.json"
 DEFAULT_SPEECH_THRESH: Final = 0.5
 DEFAULT_SILENCE_DUR_MS: Final = 300
-DEFAULT_SIMILARITY_THESHOLD: Final = 0.4
+DEFAULT_SIMILARITY_THRESHOLD: Final = 0.4
 
 # text colors
 YELLOW: Final = "\033[93m"
@@ -68,7 +68,7 @@ def get_embeddings(query: str, emb_agent: TextEmbeddingsAgent) -> str:
         result["infer_time"],
     )
 
-    if similarity < args.sim_theshold:
+    if similarity < args.sim_threshold:
         answer = "Sorry I don't know the answer"
 
     answer = replace_tool_tokens(answer, tools)
@@ -155,7 +155,10 @@ def main():
             cpu_only=cpu_only,
         )
 
-    tts_agent = TextToSpeechAgent()
+    tts_agent = TextToSpeechAgent(
+        args.tts_model,
+        args.tts_voice
+    )
 
     stt_agent = None
     if not args.no_stt:
@@ -248,6 +251,12 @@ if __name__ == "__main__":
         default=False,
         help="Disable text embeddings"
     )
+    emb_args.add_argument(
+        "--sim-threshold",
+        type=float,
+        default=DEFAULT_SIMILARITY_THRESHOLD,
+        help="Specify similarity threshold of the answer",
+    )
     stt_args = parser.add_argument_group("speech-to-text options")
     stt_args.add_argument(
         "--threshold",
@@ -290,11 +299,18 @@ if __name__ == "__main__":
         type=int,
         help="Specify number of beams to use for decoding beam search",
     )
-    tt_args.add_argument(
-        "--sim-theshold",
-        type=float,
-        default=DEFAULT_SIMILARITY_THESHOLD,
-        help="Specify similarity theshold of the answare",
+    tts_args = parser.add_argument_group("text-to-speech options")
+    tts_args.add_argument(
+        "--tts-model",
+        type=str,
+        choices=TTS_MODELS,
+        default="piper",
+        help="Text-to-speech model (default: %(default)s)"
+    )
+    tts_args.add_argument(
+        "--tts-voice",
+        type=str,
+        help="Voice for text-to-speech model"
     )
     args = parser.parse_args()
 
