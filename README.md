@@ -25,18 +25,18 @@ python -m demos.<model>
 ```
 
 ## Profiling
-Profiling scripts are available at [profile/](profile/). Currently supported models:
+Profiling scripts are available at [profile_model/](profile_model/). Currently supported models:
 
 | Model | Script | Supported Model Types |
 | ----- | ------ | ----------------- |
-| MiniLM | [profile/minilm.py](profile/minilm.py) | `.synap` (SyNAP), `.gguf` (llama.cpp) |
-| Moonshine | [profile/moonshine.py](profile/moonshine.py) | `.synap` (SyNAP), `.onnx` (ORT) |
-| Opus-MT | [profile/opus_mt.py](profile/opus_mt.py) | `.synap` (SyNAP) [^1] |
+| MiniLM | [profile_model/minilm.py](profile_model/minilm.py) | `.synap` (SyNAP), `.gguf` (llama.cpp) |
+| Moonshine | [profile_model/moonshine.py](profile_model/moonshine.py) | `.synap` (SyNAP), `.onnx` (ORT) |
+| Opus-MT | [profile_model/opus_mt.py](profile_model/opus_mt.py) | `.synap` (SyNAP) [^1] |
 
 Run profiling with:
 ```sh
 source .venv/bin/activate
-python -m profile.<model>
+python -m profile_model.<model>
 ```
 
 #### Run Options
