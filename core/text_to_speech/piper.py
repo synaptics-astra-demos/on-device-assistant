@@ -1,11 +1,14 @@
 import argparse
 import os
 import wave
+from typing import Final
 
 from piper import PiperVoice
 
 from .base import BaseTextToSpeechModel
 from ..utils.download import download_from_hf
+
+DEFAULT_PIPER_VOICE: Final[str] = "en_US-lessac-low"
 
 
 class PiperOnnx(BaseTextToSpeechModel):
