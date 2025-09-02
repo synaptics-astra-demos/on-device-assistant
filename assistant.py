@@ -20,7 +20,7 @@ from core.utils.device import validate_cpu_only
 DEFAULT_QA_FILE: Final = "data/qa_dishwasher.json"
 DEFAULT_SPEECH_THRESH: Final = 0.5
 DEFAULT_SILENCE_DUR_MS: Final = 300
-DEFAULT_SIMILARITY_THESHOLD: Final = 0.4
+DEFAULT_SIMILARITY_THRESHOLD: Final = 0.4
 
 # text colors
 YELLOW: Final = "\033[93m"
@@ -68,7 +68,7 @@ def get_embeddings(query: str, emb_agent: TextEmbeddingsAgent) -> str:
         result["infer_time"],
     )
 
-    if similarity < args.sim_theshold:
+    if similarity < args.sim_threshold:
         answer = "Sorry I don't know the answer"
 
     answer = replace_tool_tokens(answer, tools)
@@ -248,6 +248,12 @@ if __name__ == "__main__":
         default=False,
         help="Disable text embeddings"
     )
+    emb_args.add_argument(
+        "--sim-threshold",
+        type=float,
+        default=DEFAULT_SIMILARITY_THRESHOLD,
+        help="Specify similarity threshold of the answer",
+    )
     stt_args = parser.add_argument_group("speech-to-text options")
     stt_args.add_argument(
         "--threshold",
@@ -289,12 +295,6 @@ if __name__ == "__main__":
         "--num-beams",
         type=int,
         help="Specify number of beams to use for decoding beam search",
-    )
-    tt_args.add_argument(
-        "--sim-theshold",
-        type=float,
-        default=DEFAULT_SIMILARITY_THESHOLD,
-        help="Specify similarity theshold of the answare",
     )
     args = parser.parse_args()
 
