@@ -17,7 +17,7 @@ from core.translation.opus_mt import MODEL_CHOICES as TT_MODELS
 from core.text_to_speech import TextToSpeechAgent
 from core.utils.device import validate_cpu_only
 
-DEFAULT_QA_FILE: Final = "data/qa_assistant.json"
+DEFAULT_QA_FILE: Final = "data/qa_dishwasher.json"
 DEFAULT_SPEECH_THRESH: Final = 0.5
 DEFAULT_SILENCE_DUR_MS: Final = 300
 DEFAULT_SIMILARITY_THESHOLD: Final = 0.4
