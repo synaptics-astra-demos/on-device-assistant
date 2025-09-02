@@ -14,7 +14,7 @@ from core.speech_to_text import SpeechToTextAgent
 from core.speech_to_text.moonshine import MODEL_CHOICES as STT_MODELS
 from core.translation import TextTranslationAgent
 from core.translation.opus_mt import MODEL_CHOICES as TT_MODELS
-from core.text_to_speech import TextToSpeechAgent
+from core.text_to_speech import TextToSpeechAgent, MODEL_CHOICES as TTS_MODELS
 from core.utils.device import validate_cpu_only
 
 DEFAULT_QA_FILE: Final = "data/qa_dishwasher.json"
@@ -155,7 +155,10 @@ def main():
             cpu_only=cpu_only,
         )
 
-    tts_agent = TextToSpeechAgent()
+    tts_agent = TextToSpeechAgent(
+        args.tts_model,
+        args.tts_voice
+    )
 
     stt_agent = None
     if not args.no_stt:
@@ -295,6 +298,19 @@ if __name__ == "__main__":
         "--num-beams",
         type=int,
         help="Specify number of beams to use for decoding beam search",
+    )
+    tts_args = parser.add_argument_group("text-to-speech options")
+    tts_args.add_argument(
+        "--tts-model",
+        type=str,
+        choices=TTS_MODELS,
+        default="piper",
+        help="Text-to-speech model (default: %(default)s)"
+    )
+    tts_args.add_argument(
+        "--tts-voice",
+        type=str,
+        help="Voice for text-to-speech model"
     )
     args = parser.parse_args()
 

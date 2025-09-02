@@ -1,20 +1,25 @@
 import os
 import hashlib
 import logging
-from typing import Literal
+from typing import Final, Literal
 
 from ..utils.audio import AudioManager
+
+MODEL_CHOICES: Final[list] = ["piper", "kitten"]
 
 logger = logging.getLogger(__name__)
 
 
-def tts_factory(model: Literal["piper", "kitten"], voice: str):
-    from .piper import PiperOnnx
+def tts_factory(model: Literal["piper", "kitten"], voice: str | None):
+    from .piper import PiperOnnx, DEFAULT_PIPER_VOICE
+    from .kitten import KittenTextToSpeech, DEFAULT_KITTEN_VOICE
 
     if model == "piper":
-        return PiperOnnx(voice)
+        return PiperOnnx(voice or DEFAULT_PIPER_VOICE)
+    elif model == "kitten":
+        return KittenTextToSpeech(voice or DEFAULT_KITTEN_VOICE)
     else:
-        raise NotImplementedError()
+        raise ValueError(f"Invalid model '{model}', please use one of ['piper', 'kitten']")
 
 
 class TextToSpeechAgent:
@@ -22,12 +27,12 @@ class TextToSpeechAgent:
     def __init__(
         self,
         tts_model: Literal["piper", "kitten"] = "piper",
-        tts_voice: str = "en_US-lessac-low",
-        output_dir: str = "output",
+        tts_voice: str | None = None,
+        output_dir: str = ".cache/text_to_speech",
         audio_manager: AudioManager | None = None
     ):
         self.tts = tts_factory(tts_model, tts_voice)
-        self.output_dir = os.path.join(os.path.dirname(__file__), output_dir)
+        self.output_dir = output_dir
         os.makedirs(self.output_dir, exist_ok=True)
         self.audio_manager = audio_manager or AudioManager()
 
