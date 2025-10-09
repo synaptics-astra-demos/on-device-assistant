@@ -19,8 +19,8 @@ from core.utils.device import validate_cpu_only
 
 DEFAULT_QA_FILE: Final = "data/qa_dishwasher.json"
 DEFAULT_SPEECH_THRESH: Final = 0.5
-DEFAULT_SILENCE_DUR_MS: Final = 300
-DEFAULT_SIMILARITY_THRESHOLD: Final = 0.4
+DEFAULT_SILENCE_DUR_MS: Final = 500
+DEFAULT_SIMILARITY_THRESHOLD: Final = 0.30
 
 # text colors
 YELLOW: Final = "\033[93m"

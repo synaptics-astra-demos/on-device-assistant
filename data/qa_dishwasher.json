@@ -4,7 +4,15 @@
         "answer": "You're welcome"
     },
     {   
-        "question": "Who are you? What is your name?",
+        "question": "Thanks",
+        "answer": "You're welcome"
+    },
+    {   
+        "question": "Who are you?",
+        "answer": "I am an AI assistant running on Synaptics Astra SL 16 80"
+    },
+    {   
+        "question": "What is your name?",
         "answer": "I am an AI assistant running on Synaptics Astra SL 16 80"
     },
     {

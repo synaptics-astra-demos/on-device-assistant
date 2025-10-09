@@ -24,6 +24,17 @@ fi
 # Activate the virtual environment
 source .venv/bin/activate || { print_message $RED "Failed to activate virtual environment. Exiting."; exit 1; }
 
+# Download and install python3-dev deb package
+DEB_URL="https://synaptics-synap.github.io/examples-prebuilts/packages/python3-dev_3.10.13-r0_arm64.deb"
+DEB_FILE="python3-dev_3.10.13-r0_arm64.deb"
+
+print_message $YELLOW "Downloading python3-dev package..."
+wget "$DEB_URL" -O "$DEB_FILE" || { print_message $RED "Failed to download $DEB_FILE. Exiting."; exit 1; }
+
+print_message $YELLOW "Installing python3-dev package..."
+dpkg -i "$DEB_FILE" || { print_message $RED "Failed to install $DEB_FILE. Exiting."; exit 1; }
+
+
 # Install required Python packages, using the path from $CURRENT_DIR
 if [ -f "$CURRENT_DIR/requirements.txt" ]; then
     pip install -r "$CURRENT_DIR/requirements.txt" || { print_message $RED "Failed to install Python packages. Exiting."; exit 1; }
