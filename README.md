@@ -1,10 +1,6 @@
 # On-device AI Voice Assistant
 
-## Setup
-Run `./install.sh` to setup environment and download models.
-
 > Please note this Demo code is compatible with  Astra OOBE SDK 1.8 (kirkstone) and below.Images.
-
 
 This demonstration showcases an contextual AI voice assistant operating entirely on-device, with no cloud dependency or offloading, designed to run on [Synaptics Astra](https://www.synaptics.com/products/embedded-processors/astra-machina-foundation-series) Machina board. 
 
@@ -20,6 +16,9 @@ This project builds upon the work and contributions of many open source AI proje
 2. **Response Generation**: Context-specific Q&A matching using an encoder-only [language model](https://www.sbert.net/docs/quickstart.html) (future support for small LLM planned).
 3. **Text-to-Speech**: [Piper](https://github.com/rhasspy/piper) by the Open Home Foundation.
 4. **Voice Activity Detection**: [Silero VAD](https://github.com.mcas.ms/snakers4/silero-vad) pre-trained model to filter out humming and similar non-speech sounds and end of utterance.
+
+## Setup
+Run `./install.sh` to setup environment and download models.
 
 ## Demo
 Launch assistant with:
