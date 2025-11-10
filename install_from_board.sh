@@ -44,7 +44,7 @@ else
 fi
 
 # Download models and pre-generate TTS
-python initialize.py || { print_message $YELLOW "Failed to download models.";}
+python initialize_models.py || { print_message $YELLOW "Failed to download models.";}
 
 print_message $GREEN "\nInitialization complete."
 

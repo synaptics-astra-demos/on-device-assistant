@@ -18,7 +18,7 @@ This project builds upon the work and contributions of many open source AI proje
 4. **Voice Activity Detection**: [Silero VAD](https://github.com.mcas.ms/snakers4/silero-vad) pre-trained model to filter out humming and similar non-speech sounds and end of utterance.
 
 ## Setup
-Run `./install.sh` to setup environment and download models.
+Run `./install_from_board.sh` to setup environment and download models.
 
 ## Demo
 Launch assistant with:
