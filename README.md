@@ -17,10 +17,18 @@ This project builds upon the work and contributions of many open source AI proje
 3. **Text-to-Speech**: [Piper](https://github.com/rhasspy/piper) by the Open Home Foundation.
 4. **Voice Activity Detection**: [Silero VAD](https://github.com.mcas.ms/snakers4/silero-vad) pre-trained model to filter out humming and similar non-speech sounds and end of utterance.
 
+## Board Compatibility & Model Acceleration
+
+| Astra Machina Board      | Default Execution                        | Notes                                                                     |
+|--------------------------|------------------------------------------|---------------------------------------------------------------------------|
+| **SL1680**               | Embedding model (NPU) , Others (CPU)     | Uses `all-MiniLM-L6-v2-quantized.synap` accelerated by NPU                |
+| **SL1640**               | ALL models (CPU)                         | All models run on CPU by default; NPU/GPU requires SyNAP compiled models  |
+| **SL1620**               | All models (CPU)                         | All models run on CPU by default; NPU/GPU requires SyNAP compiled models  |
+
+
 ## Setup
 Run `./install_from_board.sh` to setup environment and download models.
 
-## Demo
 Launch assistant with:
 ```sh
 source .venv/bin/activate
@@ -62,6 +70,6 @@ python -m profile_model.<model>
 * `-j`: Number of cores to use for CPU execution (default: all)
 
 > [!TIP]
-> Use in conjunction with the [Astra resource usage visualizer](https://github.com/spal-synaptics/astra-visualizer) to get a live dashboard of CPU and NPU usage during inference
+> Use in conjunction with the [Astra resource usage visualizer](https://github.com/astra-team-synaptics/astra-visualizer) to get a live dashboard of CPU and NPU usage during inference
 
 [^1]: See [Astra Opus-MT models](https://huggingface.co/collections/Synaptics/astra-sl-translation-models-683cb9bdb74ebbceba6cc55c) on HuggingFace for ONNX inference
